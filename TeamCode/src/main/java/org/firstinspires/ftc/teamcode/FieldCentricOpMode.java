@@ -39,104 +39,140 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "Default OpMode", group = "Iterative OpMode")
+@TeleOp(name = "遥控测试v3.1.0(双操作手)", group = "Iterative OpMode")
 public class FieldCentricOpMode extends OpMode {
+    // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
+    // 四个底盘电机
     private DcMotor front_left;
     private DcMotor front_right;
     private DcMotor rear_left;
     private DcMotor rear_right;
+
+    //抬升电机
+    private DcMotor lift;
+    // 惯性测量单元
     private IMU imu;
+    private double multiplier;
 
     @Override
     public void init() {
-        telemetry.addData("Status", "Initializing...");
-        //Initialize Chassis motors
+        multiplier=1.1;
+        // 向遥测发送初始化开始信息
+        telemetry.addData("初始化" ,"启动");
+        //初始化电机
         {
+            //抬升电机
+            lift = hardwareMap.get(DcMotor.class,"Lift");
+            // 从硬件映射中获取四个底盘电机
             front_left = hardwareMap.get(DcMotor.class, "frontLeft");
             front_right = hardwareMap.get(DcMotor.class, "frontRight");
             rear_left = hardwareMap.get(DcMotor.class, "rearLeft");
             rear_right = hardwareMap.get(DcMotor.class, "rearRight");
-
+            // 设置电机的转动方向
+            lift.setDirection(DcMotorSimple.Direction.REVERSE);
             front_left.setDirection(DcMotorSimple.Direction.FORWARD);
             front_right.setDirection(DcMotorSimple.Direction.REVERSE);
             rear_left.setDirection(DcMotorSimple.Direction.FORWARD);
             rear_right.setDirection(DcMotorSimple.Direction.REVERSE);
-
+            // 设置电机在功率为零时的行为为制动
+            lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
-
-        //Initialize Chassis motors
         {
-            imu = hardwareMap.get(IMU.class, "imu");    // Retrieve the IMU from the hardware map
-            // Adjust the orientation parameters to match your robot
+            // 从硬件映射中获取 IMU
+            imu = hardwareMap.get(IMU.class, "imu");
+            // 调整方向参数以匹配机器人
             IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                     RevHubOrientationOnRobot.LogoFacingDirection.UP,
                     RevHubOrientationOnRobot.UsbFacingDirection.FORWARD));
-            // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
+            // 如果没有这个，REV Hub 的方向将被假定为标志朝上 / USB 朝前
             imu.initialize(parameters);
+            // 重置 IMU 的偏航角
             imu.resetYaw();
         }
-
-        telemetry.addData("Status", "Initialized");
+        // 向遥测发送初始化完成信息
+        telemetry.addData("初始化", "完毕");
     }
-
     @Override
     public void init_loop() {
+        // 初始化循环，这里为空，可能是后续需要添加的功能预留
     }
-
     @Override
     public void start() {
+        // 开始时重置运行时间
         runtime.reset();
     }
-
     private void FieldCentricMecanum(){
+        // 获取游戏手柄左摇杆的 y 轴和 x 轴的值
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
+        // 获取游戏手柄右摇杆的 x 轴的值并取反
         double rx = -gamepad1.right_stick_x;
-
-        if (gamepad1.options) {
-            imu.resetYaw();
+        // 如果按下游戏手柄的选项按钮，则重置 IMU 的偏航角
+        double lt=gamepad2.left_trigger;
+        double rt=gamepad2.right_trigger;
+        lift.setPower((rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
+        if (gamepad1.y) {
+            telemetry.addData("按键","[y]");
+//            lift.setPower(0.3);
+//            if(multiplier<2.5)multiplier+=0.001;
+//            imu.resetYaw();
+        }
+        if (gamepad1.x) {
+            telemetry.addData("按键", "[x]");
+//            lift.setPower(-0.3);
+//            if (multiplier>0.1) multiplier -= 0.001;
+//            imu.resetYaw();
         }
 
+        if(gamepad1.b) {
+            lift.setPower(0);
+            telemetry.addData("按键","[B]");
+        }
+        if (gamepad1.options) {
+            telemetry.addData("按键","[START]");
+            imu.resetYaw();
+        }
+        // 获取机器人的偏航角（以弧度为单位）
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
-
-        // Rotate the movement direction counter to the bot's rotation
+        // 将运动方向相对于机器人的旋转进行旋转
         double rotX = x * Math.cos(botHeading) - y * Math.sin(botHeading);
         double rotY = x * Math.sin(botHeading) + y * Math.cos(botHeading);
-
-        rotX = rotX * 1.1;  // Counteract imperfect strafing
-
-        // Denominator is the largest motor power (absolute value) or 1
-        // This ensures all the powers maintain the same ratio,
-        // but only if at least one is out of the range [-1, 1]
+        // 抵消不完美的平移
+        rotX = rotX * multiplier;
+        //分母是最大的电机功率（绝对值）或1，这确保所有功率保持相同的比例，但仅当至少一个超出范围[-1,1]时。
         double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
+        // 计算四个电机的功率
         double front_left_power = (rotY + rotX + rx) / denominator;
         double rear_left_power = (rotY - rotX + rx) / denominator;
         double front_right_power = (rotY - rotX - rx) / denominator;
         double rear_right_power = (rotY + rotX - rx) / denominator;
-
+        // 设置四个电机的功率
         front_left.setPower(front_left_power);
         rear_left.setPower(rear_left_power);
         front_right.setPower(front_right_power);
         rear_right.setPower(rear_right_power);
-
-        telemetry.addData("IMU", "Angle:(%.2f)", botHeading);
-        //telemetry.addData("Gamepad1", "Ly:(%.2f) Lx:(%.2f) RX:(%.2f)", y, x, rx);
-        telemetry.addData("Motors", "FL:(%.2f) FR:(%.2f) RL:(%.2f) RR:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
+        telemetry.addData("抬升按钮","[LT:%.2f],[RT:%.2f]",lt,rt);
+        telemetry.addData("抬升功率","[%.2f]",(rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
+//        telemetry.addData("偏移倍数","%.2f",multiplier);
+        // 向遥测发送机器人的角度信息
+        telemetry.addData("角度", "(%.2f)", botHeading);
+        // 向遥测发送四个电机的功率信息
+        telemetry.addData("电机功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
     }
-
     @Override
     public void loop() {
-        FieldCentricMecanum();  //Field Centric mecanum drive
-
-        telemetry.addData("Status", "Run Time: " + runtime);
+        // 调用场心麦卡纳姆驱动方法
+        FieldCentricMecanum();
+        // 向遥测发送运行时间信息
+        telemetry.addData("运行时间", runtime);
     }
-
     @Override
     public void stop() {
+        // 停止时的操作，这里为空，可能是后续需要添加的功能预留
     }
 }

@@ -35,14 +35,22 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "遥控测试v3.1.0(双操作手)", group = "Iterative OpMode")
+@TeleOp(name = "遥控测试v3.2.3(Servo)", group = "Iterative OpMode")
 public class FieldCentricOpMode extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
+    //底部夹子的两个舵机
+    //down_clip_head控制夹子的旋转
+    //down_clip_hand控制夹子的抓放
+    private Servo down_clip_head;
+    private Servo down_clip_hand;
+    //舵机夹子,顶部的那个,目前还没装好
+    private Servo clip;
     // 四个底盘电机
     private DcMotor front_left;
     private DcMotor front_right;
@@ -62,6 +70,14 @@ public class FieldCentricOpMode extends OpMode {
         telemetry.addData("初始化" ,"启动");
         //初始化电机
         {
+            down_clip_hand=hardwareMap.get(Servo.class,"DownClipHand");
+//            down_clip_hand.setPosition(0.2);
+//            down_clip_hand.scaleRange();//限制范围，待测试
+            down_clip_head=hardwareMap.get(Servo.class,"DownClipHead");
+            down_clip_head.setPosition(0);
+            //舵机夹子
+            clip = hardwareMap.get(Servo.class,"Clip");
+            clip.setPosition(0);
             //抬升电机
             lift = hardwareMap.get(DcMotor.class,"Lift");
             // 从硬件映射中获取四个底盘电机
@@ -116,6 +132,14 @@ public class FieldCentricOpMode extends OpMode {
         double lt=gamepad2.left_trigger;
         double rt=gamepad2.right_trigger;
         lift.setPower((rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
+        if(gamepad2.left_bumper) {
+//            clip.setPosition(0);//0degrees
+            down_clip_hand.setPosition(down_clip_hand.getPosition()+0.001);
+        }
+        if(gamepad2.right_bumper) {
+//            clip.setPosition(0.5);//90degrees
+            down_clip_hand.setPosition(down_clip_hand.getPosition()-0.001);
+        }
         if (gamepad1.y) {
             telemetry.addData("按键","[y]");
 //            lift.setPower(0.3);
@@ -156,6 +180,7 @@ public class FieldCentricOpMode extends OpMode {
         rear_left.setPower(rear_left_power);
         front_right.setPower(front_right_power);
         rear_right.setPower(rear_right_power);
+        telemetry.addData("舵机","[Clip:%.2f] [DCHead:%.2f] [DCHand:%.2f]",clip.getPosition(),down_clip_head.getPosition(),down_clip_hand.getPosition());
         telemetry.addData("抬升按钮","[LT:%.2f],[RT:%.2f]",lt,rt);
         telemetry.addData("抬升功率","[%.2f]",(rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
 //        telemetry.addData("偏移倍数","%.2f",multiplier);

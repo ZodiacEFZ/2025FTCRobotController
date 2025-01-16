@@ -40,7 +40,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "遥控测试v3.2.3(Servo)", group = "Iterative OpMode")
+@TeleOp(name = "遥控测试v3.3.2", group = "Iterative OpMode")
 public class FieldCentricOpMode extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
@@ -72,12 +72,15 @@ public class FieldCentricOpMode extends OpMode {
         {
             down_clip_hand=hardwareMap.get(Servo.class,"DownClipHand");
 //            down_clip_hand.setPosition(0.2);
-//            down_clip_hand.scaleRange();//限制范围，待测试
+//            down_clip_hand.scaleRange(0.3,0.7);//限制范围，待测试
             down_clip_head=hardwareMap.get(Servo.class,"DownClipHead");
-            down_clip_head.setPosition(0);
+//            down_clip_head.setPosition(0);
+//            down_clip_hand.setDirection(Servo.Direction.REVERSE);
             //舵机夹子
             clip = hardwareMap.get(Servo.class,"Clip");
             clip.setPosition(0);
+
+            //Servo.Direction.REVERSE
             //抬升电机
             lift = hardwareMap.get(DcMotor.class,"Lift");
             // 从硬件映射中获取四个底盘电机
@@ -132,6 +135,19 @@ public class FieldCentricOpMode extends OpMode {
         double lt=gamepad2.left_trigger;
         double rt=gamepad2.right_trigger;
         lift.setPower((rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
+        if(gamepad2.left_stick_x>0.1) {
+            down_clip_head.setPosition(Math.min(1,Math.max(0,down_clip_head.getPosition() + gamepad2.left_stick_x / 100)));
+        }
+        if(gamepad2.left_stick_x<-0.1) {
+            down_clip_head.setPosition(Math.min(1,Math.max(0,down_clip_head.getPosition()+gamepad2.left_stick_x / 100)));
+        }
+        if(gamepad2.left_stick_y>0.1) {
+            down_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
+        }
+        if(gamepad2.left_stick_y<-0.1) {
+            down_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
+        }
+
         if(gamepad2.left_bumper) {
 //            clip.setPosition(0);//0degrees
             down_clip_hand.setPosition(down_clip_hand.getPosition()+0.001);

@@ -128,17 +128,19 @@ public class AutonomousMode extends OpMode {
                 return output;
             }
         }
+        double turn_k_p = 0.001, turn_k_i = 0.01, turn_k_d = 0.005, turn_maxi = 0.5, turn_maxoutput = 1.0;
 
         public void leftTurn(double degree, double seconds){
             ElapsedTime timer = new ElapsedTime();
             telemetry.addData("Move:","（←)Turning Left...");
             telemetry.update();
             double origDegree = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-            PID_control pid = new PID_control(0.1, 0.01, 0.1, 0.15, 1);
+            PID_control pid = new PID_control(turn_k_p, turn_k_i, turn_k_d, turn_maxi, turn_maxoutput);
             pid.initTimer();
             while (timer.seconds() <= seconds) {
                 controlHub.clearBulkCache();
-                TurnCounterclockwise(pid.calc((imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES)-origDegree), degree));
+                double currentDegree = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
+                TurnCounterclockwise(pid.calc((currentDegree-origDegree), degree));
             }
             stopChassis();
         }
@@ -147,18 +149,25 @@ public class AutonomousMode extends OpMode {
             telemetry.addData("Move:","（→)Turning Right...");
             telemetry.update();
             double origDegree = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-            PID_control pid = new PID_control(0.1, 0.01, 0.1, 0.15, 1);
+            PID_control pid = new PID_control(turn_k_p, turn_k_i, turn_k_d, turn_maxi, turn_maxoutput);
             pid.initTimer();
             while (timer.seconds() <= seconds) {
                 controlHub.clearBulkCache();
-                TurnClockwise(pid.calc((origDegree-imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES)), degree));
+                double currentDegree = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
+                TurnClockwise(pid.calc((origDegree-currentDegree), degree));
             }
             stopChassis();
         }
         private void TurnCounterclockwise(double power){
+            if((power < 0.07) && (power >= 0.0)){
+                power = 0.0;
+            }
             setChassisPower(power, -power, power, -power);
         }
         private void TurnClockwise(double power){
+            if((power < 0.07) && (power >= 0.0)){
+                power = 0.0;
+            }
             setChassisPower(-power, power, -power, power);
         }
         public void forward(double seconds, double CPower) {
@@ -219,6 +228,7 @@ public class AutonomousMode extends OpMode {
 
     @Override
     public void init() {
+        robot = new Zodiac();
         telemetry.addData("初始化" ,"启动");
         robot.init();
         telemetry.addData("初始化", "完毕");
@@ -236,6 +246,7 @@ public class AutonomousMode extends OpMode {
     public void loop() {
         LoopCode();
         telemetry.addData("运行时间", runtime);
+        telemetry.addData("角度", "(%.2f)", robot.imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
     }
 
     private void LoopCode(){
@@ -248,12 +259,16 @@ public class AutonomousMode extends OpMode {
             case (1): {
                 telemetry.addData("Steps:", String.format("%d (前进)", steps));
                 robot.forward(0.5, DefaultCPower);
+                ElapsedTime timer = new ElapsedTime();
+                while (timer.seconds() <= 0.5) {}
                 steps++;
                 break;
             }
             case (2): {
                 telemetry.addData("Steps:", String.format("%d (左转)", steps));
                 robot.leftTurn(90, 5);
+                ElapsedTime timer = new ElapsedTime();
+                while (timer.seconds() <= 0.5) {}
                 steps++;
                 break;
             }

@@ -35,7 +35,9 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -43,7 +45,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-@TeleOp(name = "遥控测试v3.4.1(lift encoder)", group = "Iterative OpMode")
+@TeleOp(name = "遥控测试v3.4.1(Down Clip)", group = "Iterative OpMode")
 public class OpMode2 extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
@@ -52,6 +54,7 @@ public class OpMode2 extends OpMode {
     //down_clip_hand控制夹子的抓放
     private Servo down_clip_head;
     private Servo down_clip_hand;
+    private ServoImplEx down_clip_arm;
     //舵机夹子,顶部的那个,目前还没装好
     private Servo clip;
     private Servo top_clip_hand;
@@ -70,6 +73,8 @@ public class OpMode2 extends OpMode {
 
     private Values values = new Values();
 
+    private boolean DCstate = false, LB_last_pressed = false; // false for open; true for close
+
     @Override
     public void init() {
         multiplier=1.1;
@@ -78,9 +83,9 @@ public class OpMode2 extends OpMode {
         //初始化电机
         {
             down_clip_hand=hardwareMap.get(Servo.class,"DownClipHand");
-//            down_clip_hand.setPosition(0.2);
-//            down_clip_hand.scaleRange(0.3,0.7);//限制范围，待测试
             down_clip_head=hardwareMap.get(Servo.class,"DownClipHead");
+            down_clip_arm=(ServoImplEx) hardwareMap.get(Servo.class,"DownClipArm");
+            down_clip_arm.setPwmRange(new PwmControl.PwmRange(500, 2500));
             top_clip_hand=hardwareMap.get(Servo.class,"TopClipHand");
             top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
 //            down_clip_head.setPosition(0);
@@ -143,35 +148,97 @@ public class OpMode2 extends OpMode {
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = -gamepad1.right_stick_x;
-        // 如果按下游戏手柄的选项按钮，则重置 IMU 的偏航角
-        double lt=gamepad2.left_trigger;
-        double rt=gamepad2.right_trigger;
 
-        if(gamepad2.y){
+        // 如果按下游戏手柄的选项按钮，则重置 IMU 的偏航角
+        if(gamepad1.options){
+            telemetry.addData("按键","[START]");
+            imu.resetYaw();
+            gamepad1.rumble(100);
+        }
+
+        double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+        // 将运动方向相对于机器人的旋转进行旋转
+        double rotX = x * Math.cos(botHeading) - y * Math.sin(botHeading);
+        double rotY = x * Math.sin(botHeading) + y * Math.cos(botHeading);
+        // 抵消不完美的平移
+        rotX = rotX * multiplier;
+        //分母是最大的电机功率（绝对值）或1，这确保所有功率保持相同的比例，但仅当至少一个超出范围[-1,1]时。
+        double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
+        // 计算四个电机的功率
+        double front_left_power = (rotY + rotX + rx) / denominator;
+        double rear_left_power = (rotY - rotX + rx) / denominator;
+        double front_right_power = (rotY - rotX - rx) / denominator;
+        double rear_right_power = (rotY + rotX - rx) / denominator;
+        // 设置四个电机的功率
+        front_left.setPower(front_left_power);
+        rear_left.setPower(rear_left_power);
+        front_right.setPower(front_right_power);
+        rear_right.setPower(rear_right_power);
+
+        telemetry.addData("底盘方向", "(%.2f)rad", botHeading);
+        telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
+    }
+
+    private void LiftLoop(){
+        if(gamepad2.y){     //Lift up
             lift.setTargetPosition(values.liftPositions.get("up"));
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setPower(1);
+            telemetry.addData("按键2","[Y]");
         }
-        if(gamepad2.a){
+        if(gamepad2.a){     //Lift zero
             lift.setTargetPosition(values.liftPositions.get("zero"));
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setPower(1);
+            telemetry.addData("按键2","[A]");
         }
-
+        if(gamepad2.b){     //Force stop Lift
+            lift.setPower(0);
+            telemetry.addData("按键2","[B]");
+        }
         //lift.setPower((rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
-        if(gamepad2.left_stick_x>0.1) {
-            down_clip_head.setPosition(Math.min(1,Math.max(0,down_clip_head.getPosition() + gamepad2.left_stick_x / 100)));
+
+        telemetry.addData("抬升编码器",lift.getCurrentPosition());
+        telemetry.addData("抬升功率",lift.getPower());
+    }
+
+    private void ClipsLoop(){
+        //DownClip hand control
+        if(gamepad2.left_bumper && !LB_last_pressed){
+            DCstate = !DCstate;
+            LB_last_pressed = true;
+            if(DCstate){
+                down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
+            }
+            else {
+                down_clip_hand.setPosition(values.clipPositions.get("DC_open"));
+            }
         }
-        if(gamepad2.left_stick_x<-0.1) {
-            down_clip_head.setPosition(Math.min(1,Math.max(0,down_clip_head.getPosition()+gamepad2.left_stick_x / 100)));
-        }
-        if(gamepad2.left_stick_y>0.1) {
-            down_clip_hand.setPosition(Math.min(0.75,Math.max(0.45,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
-        }
-        if(gamepad2.left_stick_y<-0.1) {
-            down_clip_hand.setPosition(Math.min(0.75,Math.max(0.45,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
+        else if(!gamepad2.left_bumper){
+            LB_last_pressed = false;
         }
 
+        //DownClip head control
+        double lx2 = gamepad2.left_stick_x;
+        double DC_head_curr = down_clip_head.getPosition();
+        if(Math.abs(lx2) > 0.1){
+            double DC_head_set = DC_head_curr + lx2/50;
+            DC_head_set = Math.min(DC_head_set, 1);
+            DC_head_set = Math.max(DC_head_set, 0);
+            down_clip_head.setPosition(DC_head_set);
+        }
+
+        //DownClip arm control
+        double ly2 = gamepad2.left_stick_y;
+        double DC_arm_curr = down_clip_arm.getPosition();
+        if(Math.abs(ly2) > 0.1){
+            double DC_arm_set = DC_arm_curr + ly2/50;
+            DC_arm_set = Math.min(DC_arm_set, 1);
+            DC_arm_set = Math.max(DC_arm_set, 0);
+            down_clip_arm.setPosition(DC_arm_set);
+        }
+
+        //TopClip control 等待完成
         if(gamepad2.right_stick_x>0.1) {
             top_clip_head.setPosition(Math.min(1,Math.max(0,top_clip_head.getPosition() + gamepad2.right_stick_x / 100)));
         }
@@ -193,61 +260,20 @@ public class OpMode2 extends OpMode {
 //            clip.setPosition(0.5);//90degrees
             clip.setPosition(down_clip_hand.getPosition()-0.001);
         }
-        if (gamepad1.y) {
-            telemetry.addData("按键","[y]");
-//            lift.setPower(0.3);
-//            if(multiplier<2.5)multiplier+=0.001;
-//            imu.resetYaw();
-        }
-        if (gamepad1.x) {
-            telemetry.addData("按键", "[x]");
-//            lift.setPower(-0.3);
-//            if (multiplier>0.1) multiplier -= 0.001;
-//            imu.resetYaw();
-        }
 
-        if(gamepad1.b) {
-            lift.setPower(0);
-            telemetry.addData("按键","[B]");
-        }
-        if (gamepad1.options) {
-            telemetry.addData("按键","[START]");
-            imu.resetYaw();
-            gamepad1.rumble(100);
-        }
-        // 获取机器人的偏航角（以弧度为单位）
-        double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
-        // 将运动方向相对于机器人的旋转进行旋转
-        double rotX = x * Math.cos(botHeading) - y * Math.sin(botHeading);
-        double rotY = x * Math.sin(botHeading) + y * Math.cos(botHeading);
-        // 抵消不完美的平移
-        rotX = rotX * multiplier;
-        //分母是最大的电机功率（绝对值）或1，这确保所有功率保持相同的比例，但仅当至少一个超出范围[-1,1]时。
-        double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
-        // 计算四个电机的功率
-        double front_left_power = (rotY + rotX + rx) / denominator;
-        double rear_left_power = (rotY - rotX + rx) / denominator;
-        double front_right_power = (rotY - rotX - rx) / denominator;
-        double rear_right_power = (rotY + rotX - rx) / denominator;
-        // 设置四个电机的功率
-        front_left.setPower(front_left_power);
-        rear_left.setPower(rear_left_power);
-        front_right.setPower(front_right_power);
-        rear_right.setPower(rear_right_power);
-        telemetry.addData("舵机","[Clip:%.2f] [DCHead:%.2f] [DCHand:%.2f] [TCHead:%.2f] [TCHand:%.2f]",clip.getPosition(),down_clip_head.getPosition(),down_clip_hand.getPosition(),top_clip_head.getPosition(),top_clip_hand.getPosition());
-        telemetry.addData("抬升按钮","[LT:%.2f],[RT:%.2f]",lt,rt);
-        telemetry.addData("抬升功率","[%.2f]",(rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
-//        telemetry.addData("偏移倍数","%.2f",multiplier);
-        // 向遥测发送机器人的角度信息
-        telemetry.addData("角度", "(%.2f)", botHeading);
-        // 向遥测发送四个电机的功率信息
-        telemetry.addData("电机功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
+
+        telemetry.addData("DownClip","[Head:%.2f] [Arm:%.2f] [Hand:%.2f]", down_clip_head.getPosition(),down_clip_arm.getPosition(),down_clip_hand.getPosition());
+        telemetry.addData("TopClip","[Clip:%.2f] [Head:%.2f] [Hand:%.2f]",clip.getPosition(),top_clip_head.getPosition(),top_clip_hand.getPosition());
     }
+
     @Override
     public void loop() {
-        // 调用场心麦卡纳姆驱动方法
         FieldCentricMecanum();
-        // 向遥测发送运行时间信息
+
+        ClipsLoop();
+
+        LiftLoop();
+
         telemetry.addData("运行时间", runtime);
     }
     @Override

@@ -68,10 +68,7 @@ public class OpMode2 extends OpMode {
     private IMU imu;
     private double multiplier;
 
-    Map<String, Integer> liftPositions = new HashMap<String, Integer>(){{
-        put("zero", 0);
-        put("up", 2000);
-    }};
+    private Values values = new Values();
 
     @Override
     public void init() {
@@ -113,6 +110,9 @@ public class OpMode2 extends OpMode {
             front_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+            lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
         {
             // 从硬件映射中获取 IMU
@@ -127,8 +127,6 @@ public class OpMode2 extends OpMode {
             imu.resetYaw();
         }
 
-        lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         // 向遥测发送初始化完成信息
         telemetry.addData("初始化", "完毕");
     }
@@ -150,12 +148,12 @@ public class OpMode2 extends OpMode {
         double rt=gamepad2.right_trigger;
 
         if(gamepad2.y){
-            lift.setTargetPosition(liftPositions.get("up"));
+            lift.setTargetPosition(values.liftPositions.get("up"));
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setPower(1);
         }
         if(gamepad2.a){
-            lift.setTargetPosition(liftPositions.get("zero"));
+            lift.setTargetPosition(values.liftPositions.get("zero"));
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setPower(1);
         }

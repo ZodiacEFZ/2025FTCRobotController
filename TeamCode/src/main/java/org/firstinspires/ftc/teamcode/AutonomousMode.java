@@ -38,6 +38,8 @@ public class AutonomousMode extends OpMode {
         public void init(){
             controlHub = hardwareMap.get(LynxModule.class, "Control Hub");
             controlHub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+
+            telemetry.setAutoClear(false);
             {
                 down_clip_hand=hardwareMap.get(Servo.class,"DownClipHand");
 //            down_clip_hand.setPosition(0.2);
@@ -80,6 +82,13 @@ public class AutonomousMode extends OpMode {
                 imu.resetYaw();
             }
         }
+
+        /*public void telemetryAddData(String caption, Object value){
+            telemetry.addData(caption, value);
+        }
+        public void telemetryUpdate(){
+            telemetry.update();
+        }*/
 
         private class PID_control{
             double k_p, k_i, k_d, maxi, maxoutput;
@@ -138,9 +147,10 @@ public class AutonomousMode extends OpMode {
             PID_control pid = new PID_control(turn_k_p, turn_k_i, turn_k_d, turn_maxi, turn_maxoutput);
             pid.initTimer();
             while (timer.seconds() <= seconds) {
-                controlHub.clearBulkCache();
+                //controlHub.clearBulkCache();  //No need
                 double currentDegree = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-                TurnCounterclockwise(pid.calc((currentDegree-origDegree), degree));
+                //TurnCounterclockwise(pid.calc((currentDegree-origDegree), degree));
+                TurnCounterclockwise(pid.calc(currentDegree, (origDegree + degree)));
             }
             stopChassis();
         }
@@ -152,22 +162,22 @@ public class AutonomousMode extends OpMode {
             PID_control pid = new PID_control(turn_k_p, turn_k_i, turn_k_d, turn_maxi, turn_maxoutput);
             pid.initTimer();
             while (timer.seconds() <= seconds) {
-                controlHub.clearBulkCache();
+                //controlHub.clearBulkCache();  //No need
                 double currentDegree = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
                 TurnClockwise(pid.calc((origDegree-currentDegree), degree));
             }
             stopChassis();
         }
         private void TurnCounterclockwise(double power){
-            if((power < 0.07) && (power >= 0.0)){
+            /*if((power < 0.07) && (power >= 0.0)){
                 power = 0.0;
-            }
+            }*/
             setChassisPower(power, -power, power, -power);
         }
         private void TurnClockwise(double power){
-            if((power < 0.07) && (power >= 0.0)){
+            /*if((power < 0.07) && (power >= 0.0)){
                 power = 0.0;
-            }
+            }*/
             setChassisPower(-power, power, -power, power);
         }
         public void forward(double seconds, double CPower) {
@@ -266,7 +276,7 @@ public class AutonomousMode extends OpMode {
             }
             case (2): {
                 telemetry.addData("Steps:", String.format("%d (左转)", steps));
-                robot.leftTurn(90, 5);
+                robot.leftTurn(90.0, 5);
                 ElapsedTime timer = new ElapsedTime();
                 while (timer.seconds() <= 0.5) {}
                 steps++;

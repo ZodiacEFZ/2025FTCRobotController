@@ -56,8 +56,8 @@ public class OpMode2 extends OpMode {
     private Servo down_clip_hand;
     private ServoImplEx down_clip_arm;
     //舵机夹子,顶部的那个,目前还没装好
-    private Servo clip;
     private Servo top_clip_hand;
+    private Servo top_clip_arm;
     private Servo top_clip_head;
     // 四个底盘电机
     private DcMotor front_left;
@@ -74,6 +74,8 @@ public class OpMode2 extends OpMode {
     private Values values = new Values();
 
     private boolean DCstate = false, LB_last_pressed = false; // false for open; true for close
+    private boolean TCstate = false, RB_last_pressed = false; // false for open; true for close
+
 
     @Override
     public void init() {
@@ -86,16 +88,11 @@ public class OpMode2 extends OpMode {
             down_clip_head=hardwareMap.get(Servo.class,"DownClipHead");
             down_clip_arm=(ServoImplEx) hardwareMap.get(Servo.class,"DownClipArm");
             down_clip_arm.setPwmRange(new PwmControl.PwmRange(500, 2500));
-            top_clip_hand=hardwareMap.get(Servo.class,"TopClipHand");
-            top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
-//            down_clip_head.setPosition(0);
-//            down_clip_hand.setDirection(Servo.Direction.REVERSE);
-            //舵机夹子
-            clip = hardwareMap.get(Servo.class,"Clip");
-            clip.setPosition(0);
-//            top_clip_hand.setPosition(0);
 
-            //Servo.Direction.REVERSE
+            top_clip_arm=hardwareMap.get(Servo.class,"TopClipArm");
+            top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
+            top_clip_hand = hardwareMap.get(Servo.class,"TopClipHand");
+
             //抬升电机
             lift = hardwareMap.get(DcMotor.class,"Lift");
             // 从硬件映射中获取四个底盘电机
@@ -176,7 +173,7 @@ public class OpMode2 extends OpMode {
         rear_right.setPower(rear_right_power);
 
         telemetry.addData("底盘方向", "(%.2f)rad", botHeading);
-        telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
+        //telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
     }
 
     private void LiftLoop(){
@@ -232,38 +229,59 @@ public class OpMode2 extends OpMode {
         double ly2 = gamepad2.left_stick_y;
         double DC_arm_curr = down_clip_arm.getPosition();
         if(Math.abs(ly2) > 0.1){
-            double DC_arm_set = DC_arm_curr + ly2/50;
+            double DC_arm_set = DC_arm_curr + ly2/100;
             DC_arm_set = Math.min(DC_arm_set, 1);
             DC_arm_set = Math.max(DC_arm_set, 0);
             down_clip_arm.setPosition(DC_arm_set);
         }
 
-        //TopClip control 等待完成
-        if(gamepad2.right_stick_x>0.1) {
-            top_clip_head.setPosition(Math.min(1,Math.max(0,top_clip_head.getPosition() + gamepad2.right_stick_x / 100)));
-        }
-        if(gamepad2.right_stick_x<-0.1) {
-            top_clip_head.setPosition(Math.min(1,Math.max(0,top_clip_head.getPosition()+gamepad2.right_stick_x / 100)));
-        }
-        if(gamepad2.right_stick_y>0.1) {
-            top_clip_hand.setPosition(Math.min(0.75, Math.max(0.45, top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
-        }
-        if(gamepad2.right_stick_y<-0.1) {
-            top_clip_hand.setPosition(Math.min(0.75,Math.max(0.45,top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
+        //DownClip arm 放下
+        if(gamepad2.dpad_down){
+            telemetry.addData("按键2","[↓]");
+            down_clip_arm.setPosition(values.armPositions.get("DC_arm_down"));
         }
 
-        if(gamepad2.left_bumper) {
-//            clip.setPosition(0);//0degrees
-            clip.setPosition(down_clip_hand.getPosition()+0.001);
+        //DownClip 和 TopClip 交接
+
+        //TopClip hand control
+        if(gamepad2.right_bumper && !RB_last_pressed){
+            TCstate = !TCstate;
+            RB_last_pressed = true;
+            if(TCstate){
+                top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
+            }
+            else {
+                top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
+            }
         }
-        if(gamepad2.right_bumper) {
-//            clip.setPosition(0.5);//90degrees
-            clip.setPosition(down_clip_hand.getPosition()-0.001);
+        else if(!gamepad2.right_bumper){
+            RB_last_pressed = false;
         }
 
+        //TopClip arm
+        double ry2 = gamepad2.right_stick_y;
+        double TC_arm_curr = top_clip_arm.getPosition();
+        if(Math.abs(ry2) > 0.1){
+            double TC_arm_set = TC_arm_curr + ry2/500;
+            TC_arm_set = Math.min(TC_arm_set, 1);
+            TC_arm_set = Math.max(TC_arm_set, 0);
+            top_clip_arm.setPosition(TC_arm_set);
+        }
+
+        //TopClip head
+        double rx2 = gamepad2.right_stick_x;
+        double TC_head_curr = top_clip_head.getPosition();
+        if(Math.abs(rx2) > 0.1){
+            double TC_head_set = TC_head_curr + rx2/100;
+            TC_head_set = Math.min(TC_head_set, 1);
+            TC_head_set = Math.max(TC_head_set, 0);
+            top_clip_head.setPosition(TC_head_set);
+        }
 
         telemetry.addData("DownClip","[Head:%.2f] [Arm:%.2f] [Hand:%.2f]", down_clip_head.getPosition(),down_clip_arm.getPosition(),down_clip_hand.getPosition());
-        telemetry.addData("TopClip","[Clip:%.2f] [Head:%.2f] [Hand:%.2f]",clip.getPosition(),top_clip_head.getPosition(),top_clip_hand.getPosition());
+        telemetry.addData("DownClip status:",DCstate);
+        telemetry.addData("TopClip","[Hand:%.2f] [Head:%.2f] [Hand:%.2f]",top_clip_hand.getPosition(),top_clip_head.getPosition(),top_clip_arm.getPosition());
+        telemetry.addData("TopClip status:",TCstate);
     }
 
     @Override

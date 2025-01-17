@@ -40,8 +40,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "遥控测试v4.0.1(Encoder)", group = "Iterative OpMode")
-public class FieldCentricOpMode extends OpMode {
+@TeleOp(name = "遥控测试v3.4.1", group = "Iterative OpMode")
+public class FieldCentricOpMode1 extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
     //底部夹子的两个舵机
@@ -118,13 +118,8 @@ public class FieldCentricOpMode extends OpMode {
             // 重置 IMU 的偏航角
             imu.resetYaw();
         }
-        lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        // Turn the motor back on, required if you use STOP_AND_RESET_ENCODER
-        lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         // 向遥测发送初始化完成信息
         telemetry.addData("初始化", "完毕");
-        telemetry.addData("编码器初始",lift.getCurrentPosition());
     }
     @Override
     public void init_loop() {
@@ -144,8 +139,6 @@ public class FieldCentricOpMode extends OpMode {
         // 如果按下游戏手柄的选项按钮，则重置 IMU 的偏航角
         double lt=gamepad2.left_trigger;
         double rt=gamepad2.right_trigger;
-        // Reset the motor encoder so that it reads zero ticks
-
         lift.setPower((rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
         if(gamepad2.left_stick_x>0.1) {
             down_clip_head.setPosition(Math.min(1,Math.max(0,down_clip_head.getPosition() + gamepad2.left_stick_x / 100)));
@@ -154,10 +147,10 @@ public class FieldCentricOpMode extends OpMode {
             down_clip_head.setPosition(Math.min(1,Math.max(0,down_clip_head.getPosition()+gamepad2.left_stick_x / 100)));
         }
         if(gamepad2.left_stick_y>0.1) {
-            down_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
+            down_clip_hand.setPosition(Math.min(0.75,Math.max(0.45,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
         }
         if(gamepad2.left_stick_y<-0.1) {
-            down_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
+            down_clip_hand.setPosition(Math.min(0.75,Math.max(0.45,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
         }
 
         if(gamepad2.right_stick_x>0.1) {
@@ -167,10 +160,10 @@ public class FieldCentricOpMode extends OpMode {
             top_clip_head.setPosition(Math.min(1,Math.max(0,top_clip_head.getPosition()+gamepad2.right_stick_x / 100)));
         }
         if(gamepad2.right_stick_y>0.1) {
-            top_clip_hand.setPosition(Math.min(0.7, Math.max(0.3, top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
+            top_clip_hand.setPosition(Math.min(0.75, Math.max(0.45, top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
         }
         if(gamepad2.right_stick_y<-0.1) {
-            top_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
+            top_clip_hand.setPosition(Math.min(0.75,Math.max(0.45,top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
         }
 
         if(gamepad2.left_bumper) {
@@ -222,9 +215,8 @@ public class FieldCentricOpMode extends OpMode {
         front_right.setPower(front_right_power);
         rear_right.setPower(rear_right_power);
         telemetry.addData("舵机","[Clip:%.2f] [DCHead:%.2f] [DCHand:%.2f] [TCHead:%.2f] [TCHand:%.2f]",clip.getPosition(),down_clip_head.getPosition(),down_clip_hand.getPosition(),top_clip_head.getPosition(),top_clip_hand.getPosition());
-//        telemetry.addData("抬升按钮","[LT:%.2f],[RT:%.2f]",lt,rt);
+        telemetry.addData("抬升按钮","[LT:%.2f],[RT:%.2f]",lt,rt);
         telemetry.addData("抬升功率","[%.2f]",(rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
-        telemetry.addData("编码器",lift.getCurrentPosition());
 //        telemetry.addData("偏移倍数","%.2f",multiplier);
         // 向遥测发送机器人的角度信息
         telemetry.addData("角度", "(%.2f)", botHeading);

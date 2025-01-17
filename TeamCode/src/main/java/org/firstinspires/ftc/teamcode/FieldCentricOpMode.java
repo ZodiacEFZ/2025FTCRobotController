@@ -40,7 +40,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "遥控测试v4.0.1(Encoder)", group = "Iterative OpMode")
+@TeleOp(name = "遥控测试v4.0.2(Encoder)", group = "Iterative OpMode")
 public class FieldCentricOpMode extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
@@ -154,10 +154,10 @@ public class FieldCentricOpMode extends OpMode {
             down_clip_head.setPosition(Math.min(1,Math.max(0,down_clip_head.getPosition()+gamepad2.left_stick_x / 100)));
         }
         if(gamepad2.left_stick_y>0.1) {
-            down_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
+            down_clip_hand.setPosition(Math.min(0.75,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
         }
         if(gamepad2.left_stick_y<-0.1) {
-            down_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
+            down_clip_hand.setPosition(Math.min(0.75,Math.max(0.3,down_clip_hand.getPosition() + gamepad2.left_stick_y / 200)));
         }
 
         if(gamepad2.right_stick_x>0.1) {
@@ -167,10 +167,10 @@ public class FieldCentricOpMode extends OpMode {
             top_clip_head.setPosition(Math.min(1,Math.max(0,top_clip_head.getPosition()+gamepad2.right_stick_x / 100)));
         }
         if(gamepad2.right_stick_y>0.1) {
-            top_clip_hand.setPosition(Math.min(0.7, Math.max(0.3, top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
+            top_clip_hand.setPosition(Math.min(0.75, Math.max(0.3, top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
         }
         if(gamepad2.right_stick_y<-0.1) {
-            top_clip_hand.setPosition(Math.min(0.7,Math.max(0.3,top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
+            top_clip_hand.setPosition(Math.min(0.75,Math.max(0.3,top_clip_hand.getPosition() + gamepad2.right_stick_y / 200)));
         }
 
         if(gamepad2.left_bumper) {

@@ -40,7 +40,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "遥控测试v4.0.2(Encoder)", group = "Iterative OpMode")
+@TeleOp(name = "遥控测试v4.0.3(Encoder)", group = "Iterative OpMode")
 public class FieldCentricOpMode extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();

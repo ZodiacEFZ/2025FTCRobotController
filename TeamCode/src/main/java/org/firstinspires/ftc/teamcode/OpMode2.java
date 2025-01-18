@@ -196,7 +196,7 @@ public class OpMode2 extends OpMode {
         double rt2 = gamepad2.right_trigger;
         int lift_cur_pos = lift.getCurrentPosition();
         if(Math.abs(lt2) > 0.1){
-            int lift_set_pos = lift_cur_pos + (int) (lt2*10);
+            int lift_set_pos = lift_cur_pos + (int) (lt2*50);
             lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
             //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
             lift.setTargetPosition(lift_set_pos);
@@ -204,7 +204,7 @@ public class OpMode2 extends OpMode {
             lift.setPower(1);
         }
         if(Math.abs(rt2) > 0.1){
-            int lift_set_pos = lift_cur_pos - (int) (rt2*10);
+            int lift_set_pos = lift_cur_pos - (int) (rt2*50);
             lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
             //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
             lift.setTargetPosition(lift_set_pos);

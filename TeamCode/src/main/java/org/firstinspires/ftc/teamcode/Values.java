@@ -10,7 +10,8 @@ import java.util.Map;
 public class Values {
     Map<String, Integer> liftPositions = new HashMap<String, Integer>(){{
         put("zero", 0);
-        put("up", 1400);
+        put("up", 975);
+        put("put", 1450);
         put("max", 1800);
     }};
 

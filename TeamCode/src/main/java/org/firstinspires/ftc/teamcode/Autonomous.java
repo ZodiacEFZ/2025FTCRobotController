@@ -16,14 +16,20 @@ public class Autonomous extends OpMode {
     //LynxModule controlHub;
     private Servo down_clip_head;//down_clip_head控制夹子的旋转
     private Servo down_clip_hand;//down_clip_hand控制夹子的抓放
-    private Servo clip;//舵机夹子,顶部的那个,目前还没装好
-
+    private Servo down_clip_arm;//舵机夹子,顶部的那个,目前还没装好
+    private Servo top_clip_head;
+    private Servo top_clip_hand;
+    private Servo top_clip_arm;
     private DcMotor front_left;// 四个底盘电机
     private DcMotor front_right;
     private DcMotor rear_left;
     private DcMotor rear_right;
     private DcMotor lift;//抬升电机
+    private DcMotor intake;
     private IMU imu;// 惯性测量单元
+    private boolean DCstate = true, LB_last_pressed = false; // false for open; true for close
+    private boolean TCstate = true, RB_last_pressed = false; // false for open; true for close
+
 
     private final ElapsedTime runtime = new ElapsedTime();
 
@@ -35,16 +41,17 @@ public class Autonomous extends OpMode {
         telemetry.setAutoClear(false);
         //Initialize motors
         {
+            down_clip_arm = hardwareMap.get(Servo.class,"DownClipArm");
             down_clip_hand=hardwareMap.get(Servo.class,"DownClipHand");
-//            down_clip_hand.setPosition(0.2);
-//            down_clip_hand.scaleRange();//限制范围，待测试
             down_clip_head=hardwareMap.get(Servo.class,"DownClipHead");
-            down_clip_head.setPosition(0);
-            //舵机夹子
-            clip = hardwareMap.get(Servo.class,"Clip");
-            clip.setPosition(0);
+            down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
+            top_clip_arm = hardwareMap.get(Servo.class,"TopClipArm");
+            top_clip_hand = hardwareMap.get(Servo.class,"TopClipHand");
+            top_clip_head = hardwareMap.get(Servo.class,"TopClipHead");
+            top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
             //抬升电机
             lift = hardwareMap.get(DcMotor.class,"Lift");
+            intake = hardwareMap.get(DcMotor.class,"Intake");
             // 从硬件映射中获取四个底盘电机
             front_left = hardwareMap.get(DcMotor.class, "frontLeft");
             front_right = hardwareMap.get(DcMotor.class, "frontRight");
@@ -52,17 +59,20 @@ public class Autonomous extends OpMode {
             rear_right = hardwareMap.get(DcMotor.class, "rearRight");
             // 设置电机的转动方向
             lift.setDirection(DcMotorSimple.Direction.REVERSE);
+            intake.setDirection(DcMotorSimple.Direction.FORWARD);
             front_left.setDirection(DcMotorSimple.Direction.FORWARD);
             front_right.setDirection(DcMotorSimple.Direction.REVERSE);
             rear_left.setDirection(DcMotorSimple.Direction.FORWARD);
             rear_right.setDirection(DcMotorSimple.Direction.REVERSE);
             // 设置电机在功率为零时的行为为制动
             lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            
+            intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }

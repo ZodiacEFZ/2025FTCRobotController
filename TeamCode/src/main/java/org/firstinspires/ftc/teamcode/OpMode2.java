@@ -64,7 +64,7 @@ public class OpMode2 extends OpMode {
     private DcMotor front_right;
     private DcMotor rear_left;
     private DcMotor rear_right;
-
+    private DcMotor intake;
     //抬升电机
     private DcMotor lift;
     // 惯性测量单元
@@ -73,8 +73,8 @@ public class OpMode2 extends OpMode {
 
     private Values values = new Values();
 
-    private boolean DCstate = false, LB_last_pressed = false; // false for open; true for close
-    private boolean TCstate = false, RB_last_pressed = false; // false for open; true for close
+    private boolean DCstate = true, LB_last_pressed = false; // false for open; true for close
+    private boolean TCstate = true, RB_last_pressed = false; // false for open; true for close
 
 
     @Override
@@ -93,6 +93,7 @@ public class OpMode2 extends OpMode {
             top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
             top_clip_hand = hardwareMap.get(Servo.class,"TopClipHand");
 
+            intake = hardwareMap.get(DcMotor.class,"Intake");
             //抬升电机
             lift = hardwareMap.get(DcMotor.class,"Lift");
             // 从硬件映射中获取四个底盘电机
@@ -101,18 +102,21 @@ public class OpMode2 extends OpMode {
             rear_left = hardwareMap.get(DcMotor.class, "rearLeft");
             rear_right = hardwareMap.get(DcMotor.class, "rearRight");
             // 设置电机的转动方向
+            intake.setDirection(DcMotor.Direction.FORWARD);
             lift.setDirection(DcMotor.Direction.REVERSE);
             front_left.setDirection(DcMotor.Direction.FORWARD);
             front_right.setDirection(DcMotor.Direction.REVERSE);
             rear_left.setDirection(DcMotor.Direction.FORWARD);
             rear_right.setDirection(DcMotor.Direction.REVERSE);
             // 设置电机在功率为零时的行为为制动
+            intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
+            intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }

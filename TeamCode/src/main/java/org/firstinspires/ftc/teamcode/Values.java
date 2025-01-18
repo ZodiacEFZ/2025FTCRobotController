@@ -10,13 +10,14 @@ import java.util.Map;
 public class Values {
     Map<String, Integer> liftPositions = new HashMap<String, Integer>(){{
         put("zero", 0);
-        put("up", 2000);
+        put("up", 1400);
+        put("max", 1800);
     }};
 
     Map<String, Double> clipPositions = new HashMap<String, Double>(){{
         put("DC_close", 0.29);
         put("DC_open", 0.55);
-        put("TC_close", 0.77);
+        put("TC_close", 0.70);
         put("TC_open", 0.55);
     }};
 

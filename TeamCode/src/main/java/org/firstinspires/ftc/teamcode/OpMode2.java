@@ -45,7 +45,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-@TeleOp(name = "遥控测试v3.4.1(Down Clip)", group = "Iterative OpMode")
+@TeleOp(name = "遥控测试v6.0.0", group = "Iterative OpMode")
 public class OpMode2 extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
@@ -150,7 +150,7 @@ public class OpMode2 extends OpMode {
         if(gamepad1.options){
             telemetry.addData("按键","[START]");
             imu.resetYaw();
-            gamepad1.rumble(100);
+            gamepad1.rumble(1000);
         }
 
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
@@ -177,6 +177,26 @@ public class OpMode2 extends OpMode {
     }
 
     private void LiftLoop(){
+        double lt2 = gamepad2.left_trigger;
+        double rt2 = gamepad2.right_trigger;
+        int lift_cur_pos = lift.getCurrentPosition();
+        if(Math.abs(lt2) > 0.1){
+            int lift_set_pos = lift_cur_pos + (int) (lt2*10);
+            lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
+            //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
+            lift.setTargetPosition(lift_set_pos);
+            lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            lift.setPower(1);
+        }
+        if(Math.abs(rt2) > 0.1){
+            int lift_set_pos = lift_cur_pos - (int) (rt2*10);
+            lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
+            //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
+            lift.setTargetPosition(lift_set_pos);
+            lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            lift.setPower(1);
+        }
+
         if(gamepad2.y){     //Lift up
             lift.setTargetPosition(values.liftPositions.get("up"));
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -189,13 +209,16 @@ public class OpMode2 extends OpMode {
             lift.setPower(1);
             telemetry.addData("按键2","[A]");
         }
-        if(gamepad2.b){     //Force stop Lift
+        if(gamepad2.b){     //Force stop Lift & reset
             lift.setPower(0);
+            lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             telemetry.addData("按键2","[B]");
+            gamepad2.rumble(1000);
         }
         //lift.setPower((rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
 
-        telemetry.addData("抬升编码器",lift.getCurrentPosition());
+        telemetry.addData("抬升编码器",lift_cur_pos);
+        telemetry.addData("抬升目标",lift.getTargetPosition());
         telemetry.addData("抬升功率",lift.getPower());
     }
 
@@ -210,6 +233,7 @@ public class OpMode2 extends OpMode {
             else {
                 down_clip_hand.setPosition(values.clipPositions.get("DC_open"));
             }
+            gamepad1.rumble(100);
         }
         else if(!gamepad2.left_bumper){
             LB_last_pressed = false;
@@ -253,6 +277,7 @@ public class OpMode2 extends OpMode {
             else {
                 top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
             }
+            gamepad1.rumble(100);
         }
         else if(!gamepad2.right_bumper){
             RB_last_pressed = false;

@@ -81,8 +81,8 @@ public class FieldCentricOpMode extends OpMode {
 //            down_clip_head.setPosition(0);
 //            down_clip_hand.setDirection(Servo.Direction.REVERSE);
             //舵机夹子
-            clip = hardwareMap.get(Servo.class,"Clip");
-            clip.setPosition(0);
+            clip = hardwareMap.get(Servo.class,"TopClipHand");
+            clip.setPosition(0.5);
 //            top_clip_hand.setPosition(0);
 
             //Servo.Direction.REVERSE
@@ -175,11 +175,11 @@ public class FieldCentricOpMode extends OpMode {
 
         if(gamepad2.left_bumper) {
 //            clip.setPosition(0);//0degrees
-            clip.setPosition(down_clip_hand.getPosition()+0.001);
+            clip.setPosition(clip.getPosition()+0.001);
         }
         if(gamepad2.right_bumper) {
 //            clip.setPosition(0.5);//90degrees
-            clip.setPosition(down_clip_hand.getPosition()-0.001);
+            clip.setPosition(clip.getPosition()-0.001);
         }
         if (gamepad1.y) {
             telemetry.addData("按键","[y]");

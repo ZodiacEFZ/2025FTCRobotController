@@ -179,7 +179,18 @@ public class OpMode2 extends OpMode {
         telemetry.addData("底盘方向", "(%.2f)rad", botHeading);
         //telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
     }
-
+    private void IntakeLoop(){
+        boolean pad1y = gamepad1.y;
+        boolean pad1a = gamepad1.a;
+        int intake_cur_pos=intake.getCurrentPosition();
+        telemetry.addData("IntakeEncoder",intake_cur_pos);
+        int intake_set_pos=(pad1y?1:0)-(pad1a?1:0)+intake_cur_pos;
+        if(intake_set_pos!=intake_cur_pos) {
+            intake.setTargetPosition(intake_set_pos);
+            intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            intake.setPower(0.3);
+        }
+    }
     private void LiftLoop(){
         double lt2 = gamepad2.left_trigger;
         double rt2 = gamepad2.right_trigger;
@@ -318,6 +329,8 @@ public class OpMode2 extends OpMode {
         FieldCentricMecanum();
 
         ClipsLoop();
+
+        IntakeLoop();
 
         LiftLoop();
 

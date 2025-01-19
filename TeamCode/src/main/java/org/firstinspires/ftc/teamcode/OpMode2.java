@@ -33,6 +33,7 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.PwmControl;
@@ -41,6 +42,7 @@ import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -85,6 +87,12 @@ public class OpMode2 extends OpMode {
     private LiftState liftState = LiftState.ZERO;
     private boolean gp2y_last_pressed = false;
 
+    private enum IntakeState {
+        IN,
+        OUT,
+    };
+    private IntakeState intakeState = IntakeState.IN;
+    double intake_big_current_time = 0.0;
 
     @Override
     public void init() {
@@ -101,6 +109,9 @@ public class OpMode2 extends OpMode {
             top_clip_arm=hardwareMap.get(Servo.class,"TopClipArm");
             top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
             top_clip_hand = hardwareMap.get(Servo.class,"TopClipHand");
+
+            down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
+            top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
 
             intake = hardwareMap.get(DcMotor.class,"Intake");
             //抬升电机
@@ -197,11 +208,39 @@ public class OpMode2 extends OpMode {
         if(intake_set_pos!=intake_cur_pos) {
             intake.setTargetPosition(intake_set_pos);
             intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            intake.setPower(1);
+            intake.setPower(0.1);
+
+            if(intake_set_pos > intake_cur_pos){
+                intakeState = IntakeState.OUT;
+            }
+            else{
+                intakeState = IntakeState.IN;
+            }
         }
+
+        if(gamepad1.b){     //Force stop Intake
+            intake.setPower(0);
+            telemetry.addData("按键","[B]");
+        }
+
+        double intake_current_A = ((DcMotorEx)intake).getCurrent(CurrentUnit.AMPS);
+        if(intake_current_A >= 3.0){
+            if((runtime.seconds() - intake_big_current_time) > 2.0){
+                intake.setPower(0.0);
+            }
+            else if(intake_big_current_time <= 0.001){
+                intake_big_current_time = runtime.seconds();
+            }
+        }
+        if(intake_current_A < 0.5){
+            intake_big_current_time = 0.0;
+            intake.setPower(0.1);
+        }
+
         telemetry.addData("Intake编码器",intake_cur_pos);
         telemetry.addData("Intake目标",intake.getTargetPosition());
-        telemetry.addData("Intake功率",intake.getPower());
+        telemetry.addData("Intake速度",((DcMotorEx)intake).getVelocity());
+        telemetry.addData("Intake电流",((DcMotorEx) intake).getCurrent(CurrentUnit.AMPS));
     }
     private void LiftLoop(){
         double lt2 = gamepad2.left_trigger;
@@ -263,9 +302,18 @@ public class OpMode2 extends OpMode {
         }
         //lift.setPower((rt>0.1?rt-0.1:0)-(lt>0.1?lt-0.1:0));
 
+        double lift_current_A = ((DcMotorEx)lift).getCurrent(CurrentUnit.AMPS);
+        if(lift_current_A >= 3.0){
+            lift.setPower(0.5);
+        }
+        if(lift_current_A >= 5.0){
+            lift.setPower(0.0);
+        }
+
         telemetry.addData("抬升编码器",lift_cur_pos);
         telemetry.addData("抬升目标",lift.getTargetPosition());
-        telemetry.addData("抬升功率",lift.getPower());
+        telemetry.addData("抬升速度",((DcMotorEx)lift).getVelocity());
+        telemetry.addData("抬升电流",lift_current_A);
     }
 
     private void ClipsLoop(){
@@ -303,6 +351,9 @@ public class OpMode2 extends OpMode {
             DC_arm_set = Math.min(DC_arm_set, 1);
             DC_arm_set = Math.max(DC_arm_set, 0);
             down_clip_arm.setPosition(DC_arm_set);
+        }
+        if((intakeState == IntakeState.IN) && (DC_arm_curr < values.armPositions.get("DC_arm_IN_min"))){
+            down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
         }
 
         //DownClip arm 放下
@@ -351,7 +402,7 @@ public class OpMode2 extends OpMode {
 
         telemetry.addData("DownClip","[Head:%.2f] [Arm:%.2f] [Hand:%.2f]", down_clip_head.getPosition(),down_clip_arm.getPosition(),down_clip_hand.getPosition());
         telemetry.addData("DownClip status:",DCstate);
-        telemetry.addData("TopClip","[Hand:%.2f] [Head:%.2f] [Hand:%.2f]",top_clip_hand.getPosition(),top_clip_head.getPosition(),top_clip_arm.getPosition());
+        telemetry.addData("TopClip","[Hand:%.2f] [Head:%.2f] [Arm:%.2f]",top_clip_hand.getPosition(),top_clip_head.getPosition(),top_clip_arm.getPosition());
         telemetry.addData("TopClip status:",TCstate);
     }
 

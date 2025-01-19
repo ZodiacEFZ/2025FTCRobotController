@@ -351,7 +351,7 @@ public class Autonomous extends OpMode {
                 telemetry.addData("State:", "0 START");
                 // Set positions for next state
                 // Set forward
-                forwardState(3, values.AutonomousCPower);
+                forwardState(5, 0.3*values.AutonomousCPower);
                 // Set lift
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));//add
                 lift.setTargetPosition(values.liftPositions.get("up"));
@@ -396,7 +396,7 @@ public class Autonomous extends OpMode {
             }
             case RETRACT3:{
                 telemetry.addData("State:","3 RETRACT");
-                backwardState(0.5,values.AutonomousCPower);
+                backwardState(3,values.AutonomousCPower);
                 lift.setTargetPosition(values.liftPositions.get("zero"));
                 lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 lift.setPower(1);
@@ -408,7 +408,7 @@ public class Autonomous extends OpMode {
             case RIGHTWARD4: {
                 telemetry.addData("State:", "4 WAIT");
                 if(chassisState==ChassisState.STOP) {
-                    rightwardState(0.5,values.AutonomousCPower);
+                    rightwardState(10,values.AutonomousCPower);
                     autoState = AutoState.END5;
                     telemetry.addData("=:", "==================");
                 }

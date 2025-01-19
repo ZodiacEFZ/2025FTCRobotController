@@ -16,7 +16,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 @com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="Autonomous with FSM(test)", group="Robot")
 public class Autonomous extends OpMode {
     //LynxModule controlHub;
-    private double StartStatePutTime;
     private Servo down_clip_head;//down_clip_head控制夹子的旋转
     private Servo down_clip_hand;//down_clip_hand控制夹子的抓放
     private ServoImplEx down_clip_arm;//舵机夹子,顶部的那个,目前还没装好
@@ -203,7 +202,7 @@ public class Autonomous extends OpMode {
         START0,
         FORWARD_LIFT1,
         PUT2,
-        RETRACT3,
+        RETRACT_BACKWARD3,
         RIGHTWARD4,
         END5,
     };
@@ -218,6 +217,8 @@ public class Autonomous extends OpMode {
     };
     private ChassisState chassisState = ChassisState.STOP;
     private double chassisStartTime = 0.0, chassisSetTime = 0.0, chassisPower = 0.0;
+
+    private double StartStatePutTime = 0.0;
 
     //loopMoveChassis() needes to be executed every loop
     private void loopMoveChassis(){
@@ -348,28 +349,32 @@ public class Autonomous extends OpMode {
         int liftCurrentPosition = lift.getCurrentPosition();
         switch (autoState){
             case START0: {
-                telemetry.addData("State:", "0 START");
+                telemetry.addData("State0:", "0 START");
+                telemetry.update();
                 // Set positions for next state
                 // Set forward
-                forwardState(5, 0.3*values.AutonomousCPower);
+                forwardState(6, 0.3*values.AutonomousCPower);
                 // Set lift
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));//add
                 lift.setTargetPosition(values.liftPositions.get("up"));
                 lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 lift.setPower(1);
                 // Change state
+                StartStatePutTime = runtime.seconds();
                 autoState = AutoState.FORWARD_LIFT1;
-                telemetry.addData("=:", "==================");
+                telemetry.addLine("==================");
+                telemetry.update();
                 break;
             }
             case FORWARD_LIFT1: {
-                telemetry.addData("State:", "1 FORWARD & LIFT");
+                telemetry.addData("State1:", "1 FORWARD & LIFT");
+                telemetry.update();
                 double lift_current_A = ((DcMotorEx)lift).getCurrent(CurrentUnit.AMPS);
                 if(lift_current_A >= 3.0){
                     lift.setPower(0.5);
                 }
                 //wait for forward & lift
-                if (Math.abs(liftCurrentPosition - values.liftPositions.get("up")) < 50 && chassisState==ChassisState.STOP) {
+                if ((Math.abs(liftCurrentPosition - values.liftPositions.get("up")) < 50) && chassisState==ChassisState.STOP && (runtime.seconds()-StartStatePutTime)>=6) {
                     // Set positions for next state
                     lift.setTargetPosition(values.liftPositions.get("put"));
                     StartStatePutTime = runtime.seconds();
@@ -377,52 +382,70 @@ public class Autonomous extends OpMode {
                     lift.setPower(1);
                     //change state
                     autoState = AutoState.PUT2;
-                    telemetry.addData("=:", "==================");
+                    telemetry.addLine("==================");
+                    telemetry.update();
                 }
                 break;
             }
             case PUT2: {
-                telemetry.addData("State:","2 PUT");
+                telemetry.addData("State2:","2 PUT");
+                telemetry.update();
                 double lift_current_A = ((DcMotorEx)lift).getCurrent(CurrentUnit.AMPS);
                 if(lift_current_A >= 3.0){
                     lift.setPower(0.5);
                 }
-                if(Math.abs(liftCurrentPosition - values.liftPositions.get("put")) < 50 || (runtime.seconds()-StartStatePutTime)>=5) {
+                if(Math.abs(liftCurrentPosition - values.liftPositions.get("put")) < 50 && (runtime.seconds()-StartStatePutTime)>=5) {
                     top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
-                    autoState = AutoState.RETRACT3;
-                    telemetry.addData("=:", "==================");
+
+                    lift.setTargetPosition(values.liftPositions.get("zero"));
+                    lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    lift.setPower(1);
+
+                    backwardState(5,0.6*values.AutonomousCPower);
+
+                    top_clip_arm.setPosition(values.armPositions.get("TC_arm_down"));
+
+                    autoState = AutoState.RETRACT_BACKWARD3;
+                    StartStatePutTime = runtime.seconds();
+                    telemetry.addLine("==================");
+                    telemetry.update();
                 }
                 break;
             }
-            case RETRACT3:{
-                telemetry.addData("State:","3 RETRACT");
-                backwardState(3,values.AutonomousCPower);
-                lift.setTargetPosition(values.liftPositions.get("zero"));
-                lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                lift.setPower(1);
-                top_clip_arm.setPosition(values.armPositions.get("TC_arm_down"));
-                autoState = AutoState.RIGHTWARD4;
-                telemetry.addData("=:", "==================");
+            case RETRACT_BACKWARD3:{
+                telemetry.addData("State3:","3 RETRACT");
+                telemetry.update();
+
+                if((runtime.seconds()-StartStatePutTime)>=5) {
+                    rightwardState(5,0.3*values.AutonomousCPower);
+                    autoState = AutoState.RIGHTWARD4;
+                    telemetry.addLine("==================");
+                    telemetry.update();
+                }
+
                 break;
             }
             case RIGHTWARD4: {
-                telemetry.addData("State:", "4 WAIT");
+                telemetry.addData("State4:", "4 WAIT");
+                telemetry.update();
                 if(chassisState==ChassisState.STOP) {
-                    rightwardState(10,values.AutonomousCPower);
                     autoState = AutoState.END5;
-                    telemetry.addData("=:", "==================");
+                    telemetry.addLine("==================");
+                    telemetry.update();
                 }
 
                 //stopState();
                 break;
             }
             case END5:{
-                telemetry.addData("State:","5 END");
+                telemetry.addData("State5:","5 END");
+                telemetry.update();
                 stopState();
                 break;
             }
             default:{
-                telemetry.addData("State:", "WAIT(default)");
+                telemetry.addData("State00:", "WAIT(default)");
+                telemetry.update();
                 stopState();
             }
         }
@@ -430,6 +453,7 @@ public class Autonomous extends OpMode {
         telemetry.addData("运行时间", runtime);
         telemetry.addData("角度(Degrees)", "(%.2f)", imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
         telemetry.addData("抬升位置", "(%d)", liftCurrentPosition);
+        telemetry.update();
     }
     
 }

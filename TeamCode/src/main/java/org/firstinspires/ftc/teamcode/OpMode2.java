@@ -212,7 +212,7 @@ public class OpMode2 extends OpMode {
         rear_right.setPower(rear_right_power);
 
         telemetry.addData("底盘方向", "(%.2f)rad", botHeading);
-        //telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
+        telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
     }
     private void IntakeLoop(){
         boolean pad1y = (gamepad1.y || gamepad2.dpad_up);

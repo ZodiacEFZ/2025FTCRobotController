@@ -10,8 +10,8 @@ import java.util.Map;
 public class Values {
     Map<String, Integer> liftPositions = new HashMap<String, Integer>(){{
         put("zero", 0);
-        put("up", 850);
-        put("put", 1600);
+        put("up", 635);
+        put("put", 1580);
         put("max", 1800);
     }};
 
@@ -20,8 +20,8 @@ public class Values {
     }};*/
 
     Map<String, Double> headPositions = new HashMap<String, Double>(){{
-        put("Head_down", 1.0);
-        put("Head_up", 0.5);
+        put("Head_down", 0.4);
+        put("Head_up", 1.0);
     }};
 
     Map<String, Double> clipPositions = new HashMap<String, Double>(){{
@@ -32,11 +32,12 @@ public class Values {
     }};
 
     Map<String, Double> armPositions = new HashMap<String, Double>(){{
-        put("DC_arm_down", 1.0);
+        put("DC_arm_down", 0.0);
         //put("DC_arm_change", 0.5);
-        put("DC_arm_IN_min", 0.63);
-        put("DC_head_init", 0.5);
+        put("DC_arm_up", 0.7);
         put("DC_arm_init", 1.0);
+        put("DC_head_init", 0.5);
+        //put("DC_arm_init", 1.0);
         put("TC_arm_up", 1.0);
         put("TC_arm_down", 0.0);
     }};

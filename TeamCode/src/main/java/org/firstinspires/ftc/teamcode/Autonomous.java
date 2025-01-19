@@ -19,9 +19,10 @@ public class Autonomous extends OpMode {
     private Servo down_clip_head;//down_clip_head控制夹子的旋转
     private Servo down_clip_hand;//down_clip_hand控制夹子的抓放
     private ServoImplEx down_clip_arm;//舵机夹子,顶部的那个,目前还没装好
-    private Servo top_clip_head;
+    //private Servo top_clip_head;
     private Servo top_clip_hand;
     private Servo top_clip_arm;
+    private Servo head;
     private DcMotor front_left;// 四个底盘电机
     private DcMotor front_right;
     private DcMotor rear_left;
@@ -49,13 +50,16 @@ public class Autonomous extends OpMode {
             down_clip_arm.setPwmRange(new PwmControl.PwmRange(500, 2500));
 
             top_clip_arm=hardwareMap.get(Servo.class,"TopClipArm");
-            top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
+            //top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
             top_clip_hand = hardwareMap.get(Servo.class,"TopClipHand");
+
+            head = hardwareMap.get(Servo.class,"Head");
 
             down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
             top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
-            down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
+            down_clip_arm.setPosition(values.armPositions.get("DC_arm_init"));
             down_clip_head.setPosition(values.armPositions.get("DC_head_init"));
+            head.setPosition(values.headPositions.get("Head_up"));
 
             intake = hardwareMap.get(DcMotor.class,"Intake");
             //抬升电机
@@ -204,7 +208,7 @@ public class Autonomous extends OpMode {
         PUT2,
         RETRACT_BACKWARD3,
         RIGHTWARD4,
-        TURN5,
+        //TURN5,
         END6
     };
     private AutoState autoState = AutoState.START0;
@@ -333,7 +337,7 @@ public class Autonomous extends OpMode {
         chassisState = ChassisState.MOVE;
         chassisStartTime = runtime.seconds();
         chassisSetTime = seconds;
-        chassisY = Cpower;
+        chassisY = -Cpower;
         chassisX = 0.0;
         real_chassisRX = 0.0;
     }
@@ -341,7 +345,7 @@ public class Autonomous extends OpMode {
         chassisState = ChassisState.MOVE;
         chassisStartTime = runtime.seconds();
         chassisSetTime = seconds;
-        chassisY = -Cpower;
+        chassisY = Cpower;
         chassisX = 0.0;
         real_chassisRX = 0.0;
     }
@@ -446,8 +450,10 @@ public class Autonomous extends OpMode {
                 telemetry.addData("State0:", "0 START");
                 telemetry.update();
                 // Set positions for next state
+
+                head.setPosition(values.headPositions.get("Head_down"));
                 // Set forward
-                forwardState(6, 0.3*values.AutonomousCPower);
+                forwardState(6.5, 0.3*values.AutonomousCPower);
                 // Set lift
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));//add
                 lift.setTargetPosition(values.liftPositions.get("up"));
@@ -495,7 +501,7 @@ public class Autonomous extends OpMode {
                     lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     lift.setPower(1);
 
-                    backwardState(5,0.6*values.AutonomousCPower);
+                    backwardState(5,0.5*values.AutonomousCPower);
 
                     top_clip_arm.setPosition(values.armPositions.get("TC_arm_down"));
 
@@ -511,7 +517,7 @@ public class Autonomous extends OpMode {
                 telemetry.update();
 
                 if((runtime.seconds()-StartStatePutTime)>=5) {
-                    rightwardState(7, 0.5*values.AutonomousCPower);
+                    rightwardState(7, 0.7*values.AutonomousCPower);
                     autoState = AutoState.RIGHTWARD4;
                     telemetry.addLine("==================");
                     telemetry.update();
@@ -523,8 +529,9 @@ public class Autonomous extends OpMode {
                 telemetry.addData("State4:", "4 RIGHTWARD");
                 telemetry.update();
                 if(chassisState==ChassisState.STOP) {
-                    turnState(0.1, 0.5);
-                    autoState = AutoState.TURN5;
+                    //turnState(0.3, 0.5);
+                    //autoState = AutoState.TURN5;
+                    autoState = AutoState.END6;
                     telemetry.addLine("==================");
                     telemetry.update();
                 }
@@ -532,7 +539,7 @@ public class Autonomous extends OpMode {
                 //stopState();
                 break;
             }
-            case TURN5: {
+            /*case TURN5: {
                 telemetry.addData("State5:", "5 TURN");
                 telemetry.update();
                 if(chassisState==ChassisState.STOP) {
@@ -543,7 +550,7 @@ public class Autonomous extends OpMode {
 
                 //stopState();
                 break;
-            }
+            }*/
             case END6:{
                 telemetry.addData("State6:","6 END");
                 telemetry.update();

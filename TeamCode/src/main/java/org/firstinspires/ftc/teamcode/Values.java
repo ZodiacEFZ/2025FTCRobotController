@@ -19,6 +19,11 @@ public class Values {
 
     }};*/
 
+    Map<String, Double> headPositions = new HashMap<String, Double>(){{
+        put("Head_down", 1.0);
+        put("Head_up", 0.5);
+    }};
+
     Map<String, Double> clipPositions = new HashMap<String, Double>(){{
         put("DC_close", 0.29);
         put("DC_open", 0.55);

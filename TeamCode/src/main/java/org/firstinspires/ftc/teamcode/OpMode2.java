@@ -57,10 +57,12 @@ public class OpMode2 extends OpMode {
     private Servo down_clip_head;
     private Servo down_clip_hand;
     private ServoImplEx down_clip_arm;
-    //舵机夹子,顶部的那个,目前还没装好
+
     private Servo top_clip_hand;
     private Servo top_clip_arm;
     private Servo top_clip_head;
+
+    private Servo head;
     // 四个底盘电机
     private DcMotor front_left;
     private DcMotor front_right;
@@ -77,6 +79,7 @@ public class OpMode2 extends OpMode {
 
     private boolean DCstate = true, LB_last_pressed = false; // false for open; true for close
     private boolean TCstate = true, RB_last_pressed = false; // false for open; true for close
+    private boolean HeadState = true, gp1_LB_last_pressed = false; // true for up; false for down
 
     private enum LiftState {
         ZERO,
@@ -111,10 +114,13 @@ public class OpMode2 extends OpMode {
             top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
             top_clip_hand = hardwareMap.get(Servo.class,"TopClipHand");
 
+            head = hardwareMap.get(Servo.class,"Head");
+
             down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
             top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
             down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
             down_clip_head.setPosition(values.armPositions.get("DC_head_init"));
+            head.setPosition(values.headPositions.get("Head_up"));
 
             intake = hardwareMap.get(DcMotor.class,"Intake");
             //抬升电机
@@ -170,7 +176,24 @@ public class OpMode2 extends OpMode {
     public void start() {
         // 开始时重置运行时间
         runtime.reset();
+
+        head.setPosition(values.headPositions.get("Head_down"));
+        HeadState = false;
     }
+
+    private void HeadLoop(){
+        if(gamepad1.left_bumper && !gp1_LB_last_pressed){
+            HeadState = !HeadState;
+            gp1_LB_last_pressed = true;
+            if(HeadState){
+                head.setPosition(values.headPositions.get("Head_up"));
+            }
+            else {
+                head.setPosition(values.headPositions.get("Head_down"));
+            }
+        }
+    }
+
     private void FieldCentricMecanum(){
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
@@ -214,6 +237,7 @@ public class OpMode2 extends OpMode {
         telemetry.addData("底盘方向", "(%.2f)rad", botHeading);
         telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
     }
+
     private void IntakeLoop(){
         boolean pad1y = (gamepad1.y || gamepad2.dpad_up);
         boolean pad1a = (gamepad1.a || gamepad2.dpad_down);
@@ -258,6 +282,7 @@ public class OpMode2 extends OpMode {
         telemetry.addData("Intake速度",((DcMotorEx)intake).getVelocity());
         telemetry.addData("Intake电流",((DcMotorEx) intake).getCurrent(CurrentUnit.AMPS));
     }
+
     private void LiftLoop(){
         double lt2 = gamepad2.left_trigger;
         double rt2 = gamepad2.right_trigger;

@@ -71,7 +71,7 @@ public class OpMode2 extends OpMode {
     private DcMotor lift;
     // 惯性测量单元
     private IMU imu;
-    private double multiplier;
+    //private double multiplier;
 
     private Values values = new Values();
 
@@ -97,7 +97,7 @@ public class OpMode2 extends OpMode {
 
     @Override
     public void init() {
-        multiplier=1.1;
+        //multiplier=1.1;
         // 向遥测发送初始化开始信息
         telemetry.addData("初始化" ,"启动");
         //初始化电机
@@ -197,7 +197,7 @@ public class OpMode2 extends OpMode {
         double rotX = x * Math.cos(botHeading) - y * Math.sin(botHeading);
         double rotY = x * Math.sin(botHeading) + y * Math.cos(botHeading);
         // 抵消不完美的平移
-        rotX = rotX * multiplier;
+        rotX = rotX * values.chassisMultiplier;
         //分母是最大的电机功率（绝对值）或1，这确保所有功率保持相同的比例，但仅当至少一个超出范围[-1,1]时。
         double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
         // 计算四个电机的功率

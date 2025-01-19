@@ -29,8 +29,8 @@ public class Autonomous extends OpMode {
     private DcMotor lift;//抬升电机
     private DcMotor intake;
     private IMU imu;// 惯性测量单元
-    private boolean DCstate = true, LB_last_pressed = false; // false for open; true for close
-    private boolean TCstate = true, RB_last_pressed = false; // false for open; true for close
+    //private boolean DCstate = true, LB_last_pressed = false; // false for open; true for close
+    //private boolean TCstate = true, RB_last_pressed = false; // false for open; true for close
 
 
     private final ElapsedTime runtime = new ElapsedTime();
@@ -204,26 +204,71 @@ public class Autonomous extends OpMode {
         PUT2,
         RETRACT_BACKWARD3,
         RIGHTWARD4,
-        END5,
+        TURN5,
+        END6
     };
     private AutoState autoState = AutoState.START0;
 
-    private enum ChassisState {
+    /*private enum ChassisState {
         STOP,
         FORWARD,
         BACKWARD,
         LEFTWARD,
         RIGHTWARD
+    };*/
+    private enum ChassisState {
+        STOP,
+        MOVE
     };
     private ChassisState chassisState = ChassisState.STOP;
-    private double chassisStartTime = 0.0, chassisSetTime = 0.0, chassisPower = 0.0;
+    private double chassisStartTime = 0.0, chassisSetTime = 0.0, /*chassisPower = 0.0,*/ chassisX = 0.0, chassisY = 0.0, real_chassisRX = 0.0;
 
     private double StartStatePutTime = 0.0;
 
     //loopMoveChassis() needes to be executed every loop
     private void loopMoveChassis(){
         double currentTime = runtime.seconds();
-        switch (chassisState) {
+               
+        if(chassisState == ChassisState.STOP){
+            chassisX = 0.0;
+            chassisY = 0.0;
+            real_chassisRX = 0.0;
+            setChassisPower(0.0, 0.0, 0.0, 0.0);;
+            chassisStartTime = 0.0;
+            chassisSetTime = 0.0;
+            //chassisPower = 0.0;
+            telemetry.addData("Move:", "🛑Stop");
+        }
+        else {
+            if((currentTime-chassisStartTime) >= chassisSetTime){
+                setChassisPower(0.0, 0.0, 0.0, 0.0);;
+                chassisState = ChassisState.STOP;
+            }
+            else {
+                double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+                // 将运动方向相对于机器人的旋转进行旋转
+                double rotX = chassisX * Math.cos(botHeading) - chassisY * Math.sin(botHeading);
+                double rotY = chassisX * Math.sin(botHeading) + chassisY * Math.cos(botHeading);
+                // 抵消不完美的平移
+                rotX = rotX * values.chassisMultiplier;
+                //分母是最大的电机功率（绝对值）或1，这确保所有功率保持相同的比例，但仅当至少一个超出范围[-1,1]时。
+                double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(real_chassisRX), 1);
+                // 计算四个电机的功率
+                double front_left_power = (rotY + rotX + real_chassisRX) / denominator;
+                double rear_left_power = (rotY - rotX + real_chassisRX) / denominator;
+                double front_right_power = (rotY - rotX - real_chassisRX) / denominator;
+                double rear_right_power = (rotY + rotX - real_chassisRX) / denominator;
+                // 设置四个电机的功率
+                front_left.setPower(front_left_power);
+                rear_left.setPower(rear_left_power);
+                front_right.setPower(front_right_power);
+                rear_right.setPower(rear_right_power);
+
+                telemetry.addData("Move:", "Moving...");
+            }
+        }
+        
+        /*switch (chassisState) {
             case STOP: {
                 setChassisPower(0.0, 0.0, 0.0, 0.0);;
                 chassisStartTime = 0.0;
@@ -281,10 +326,51 @@ public class Autonomous extends OpMode {
                 telemetry.addData("Chassis:", "🛑Stop(Default)");
                 break;
             }
-        }
+        }*/
+    }
+    
+    private void forwardState(double seconds, double Cpower){
+        chassisState = ChassisState.MOVE;
+        chassisStartTime = runtime.seconds();
+        chassisSetTime = seconds;
+        chassisY = Cpower;
+        chassisX = 0.0;
+        real_chassisRX = 0.0;
+    }
+    private void backwardState(double seconds, double Cpower){
+        chassisState = ChassisState.MOVE;
+        chassisStartTime = runtime.seconds();
+        chassisSetTime = seconds;
+        chassisY = -Cpower;
+        chassisX = 0.0;
+        real_chassisRX = 0.0;
+    }
+    private void leftwardState(double seconds, double Cpower){
+        chassisState = ChassisState.MOVE;
+        chassisStartTime = runtime.seconds();
+        chassisSetTime = seconds;
+        chassisY = 0.0;
+        chassisX = -Cpower;
+        real_chassisRX = 0.0;
+    }
+    private void rightwardState(double seconds, double Cpower){
+        chassisState = ChassisState.MOVE;
+        chassisStartTime = runtime.seconds();
+        chassisSetTime = seconds;
+        chassisY = 0.0;
+        chassisX = Cpower;
+        real_chassisRX = 0.0;
+    }
+    private void turnState(double seconds, double gp_rx){
+        chassisState = ChassisState.MOVE;
+        chassisStartTime = runtime.seconds();
+        chassisSetTime = seconds;
+        chassisY = 0.0;
+        chassisX = 0.0;
+        real_chassisRX = -gp_rx;
     }
 
-    private void forwardState(double seconds, double CPower) {
+    /*private void forwardState(double seconds, double CPower) {
         chassisState = ChassisState.FORWARD;
         chassisStartTime = runtime.seconds();
         chassisSetTime = seconds;
@@ -312,6 +398,14 @@ public class Autonomous extends OpMode {
         chassisPower = CPower;
         setChassisPower(chassisPower, -chassisPower, -chassisPower, chassisPower);
     }
+    private void rightwardStateMod(double seconds, double CPower) {
+        chassisState = ChassisState.RIGHTWARD;
+        chassisStartTime = runtime.seconds();
+        chassisSetTime = seconds;
+        //chassisPower = CPower;
+        //setChassisPower(chassisPower, -chassisPower, -chassisPower, chassisPower);
+        setChassisPower(0.5, -0.7, -0.5, 0.5);
+    }*/
     private void stopState() {
         chassisState = ChassisState.STOP;
     }
@@ -413,11 +507,11 @@ public class Autonomous extends OpMode {
                 break;
             }
             case RETRACT_BACKWARD3:{
-                telemetry.addData("State3:","3 RETRACT");
+                telemetry.addData("State3:","3 RETRACT_BACKWARD");
                 telemetry.update();
 
                 if((runtime.seconds()-StartStatePutTime)>=5) {
-                    rightwardState(5,0.3*values.AutonomousCPower);
+                    rightwardState(7, 0.5*values.AutonomousCPower);
                     autoState = AutoState.RIGHTWARD4;
                     telemetry.addLine("==================");
                     telemetry.update();
@@ -426,10 +520,11 @@ public class Autonomous extends OpMode {
                 break;
             }
             case RIGHTWARD4: {
-                telemetry.addData("State4:", "4 WAIT");
+                telemetry.addData("State4:", "4 RIGHTWARD");
                 telemetry.update();
                 if(chassisState==ChassisState.STOP) {
-                    autoState = AutoState.END5;
+                    turnState(0.1, 0.5);
+                    autoState = AutoState.TURN5;
                     telemetry.addLine("==================");
                     telemetry.update();
                 }
@@ -437,8 +532,20 @@ public class Autonomous extends OpMode {
                 //stopState();
                 break;
             }
-            case END5:{
-                telemetry.addData("State5:","5 END");
+            case TURN5: {
+                telemetry.addData("State5:", "5 TURN");
+                telemetry.update();
+                if(chassisState==ChassisState.STOP) {
+                    autoState = AutoState.END6;
+                    telemetry.addLine("==================");
+                    telemetry.update();
+                }
+
+                //stopState();
+                break;
+            }
+            case END6:{
+                telemetry.addData("State6:","6 END");
                 telemetry.update();
                 stopState();
                 break;

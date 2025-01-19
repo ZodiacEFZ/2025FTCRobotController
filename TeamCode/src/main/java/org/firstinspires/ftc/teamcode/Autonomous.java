@@ -4,12 +4,14 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 @com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="Autonomous with FSM(test)", group="Robot")
 public class Autonomous extends OpMode {
@@ -350,10 +352,16 @@ public class Autonomous extends OpMode {
             }
             case FORWARD_LIFT1: {
                 telemetry.addData("State:", "1 FORWARD & LIFT");
+                double lift_current_A = ((DcMotorEx)lift).getCurrent(CurrentUnit.AMPS);
+                if(lift_current_A >= 3.0){
+                    lift.setPower(0.5);
+                }
                 //wait for forward & lift
                 if (Math.abs(liftCurrentPosition - values.liftPositions.get("up")) < 50) {
                     // Set positions for next state
-
+                    lift.setTargetPosition(values.liftPositions.get("put"));
+                    lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    lift.setPower(1);
                     //change state
                     autoState = AutoState.PUT2;
                 }

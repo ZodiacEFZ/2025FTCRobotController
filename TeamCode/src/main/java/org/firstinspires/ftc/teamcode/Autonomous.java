@@ -1,13 +1,13 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -19,7 +19,7 @@ public class Autonomous extends OpMode {
     private double StartStatePutTime;
     private Servo down_clip_head;//down_clip_head控制夹子的旋转
     private Servo down_clip_hand;//down_clip_hand控制夹子的抓放
-    private Servo down_clip_arm;//舵机夹子,顶部的那个,目前还没装好
+    private ServoImplEx down_clip_arm;//舵机夹子,顶部的那个,目前还没装好
     private Servo top_clip_head;
     private Servo top_clip_hand;
     private Servo top_clip_arm;
@@ -44,40 +44,49 @@ public class Autonomous extends OpMode {
         telemetry.setAutoClear(false);
         //Initialize motors
         {
-            down_clip_arm = hardwareMap.get(Servo.class,"DownClipArm");
             down_clip_hand=hardwareMap.get(Servo.class,"DownClipHand");
             down_clip_head=hardwareMap.get(Servo.class,"DownClipHead");
-            down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
-            top_clip_arm = hardwareMap.get(Servo.class,"TopClipArm");
+            down_clip_arm=(ServoImplEx) hardwareMap.get(Servo.class,"DownClipArm");
+            down_clip_arm.setPwmRange(new PwmControl.PwmRange(500, 2500));
+
+            top_clip_arm=hardwareMap.get(Servo.class,"TopClipArm");
+            top_clip_head=hardwareMap.get(Servo.class,"TopClipHead");
             top_clip_hand = hardwareMap.get(Servo.class,"TopClipHand");
-            top_clip_head = hardwareMap.get(Servo.class,"TopClipHead");
+
+            down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
             top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
+            down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
+            down_clip_head.setPosition(values.armPositions.get("DC_head_init"));
+
+            intake = hardwareMap.get(DcMotor.class,"Intake");
             //抬升电机
             lift = hardwareMap.get(DcMotor.class,"Lift");
-            intake = hardwareMap.get(DcMotor.class,"Intake");
             // 从硬件映射中获取四个底盘电机
             front_left = hardwareMap.get(DcMotor.class, "frontLeft");
             front_right = hardwareMap.get(DcMotor.class, "frontRight");
             rear_left = hardwareMap.get(DcMotor.class, "rearLeft");
             rear_right = hardwareMap.get(DcMotor.class, "rearRight");
             // 设置电机的转动方向
-            lift.setDirection(DcMotorSimple.Direction.REVERSE);
-            intake.setDirection(DcMotorSimple.Direction.FORWARD);
-            front_left.setDirection(DcMotorSimple.Direction.FORWARD);
-            front_right.setDirection(DcMotorSimple.Direction.REVERSE);
-            rear_left.setDirection(DcMotorSimple.Direction.FORWARD);
-            rear_right.setDirection(DcMotorSimple.Direction.REVERSE);
+            intake.setDirection(DcMotor.Direction.FORWARD);
+            lift.setDirection(DcMotor.Direction.REVERSE);
+            front_left.setDirection(DcMotor.Direction.FORWARD);
+            front_right.setDirection(DcMotor.Direction.REVERSE);
+            rear_left.setDirection(DcMotor.Direction.FORWARD);
+            rear_right.setDirection(DcMotor.Direction.REVERSE);
             // 设置电机在功率为零时的行为为制动
-            lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             front_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
             intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            intake.setTargetPosition(0);
             lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            lift.setTargetPosition(0);
         }
         //Initialize IMU & reset yaw
         {
@@ -190,13 +199,12 @@ public class Autonomous extends OpMode {
     }
     */
 
-
     private enum AutoState {
         START0,
         FORWARD_LIFT1,
         PUT2,
         RETRACT3,
-        WAIT4,
+        RIGHTWARD4,
         END5,
     };
     private AutoState autoState = AutoState.START0;
@@ -277,31 +285,31 @@ public class Autonomous extends OpMode {
 
     private void forwardState(double seconds, double CPower) {
         chassisState = ChassisState.FORWARD;
-        setChassisPower(-chassisPower, -chassisPower, -chassisPower, -chassisPower);
         chassisStartTime = runtime.seconds();
         chassisSetTime = seconds;
         chassisPower = CPower;
+        setChassisPower(-chassisPower, -chassisPower, -chassisPower, -chassisPower);
     }
     private void backwardState(double seconds, double CPower) {
         chassisState = ChassisState.BACKWARD;
-        setChassisPower(chassisPower, chassisPower, chassisPower, chassisPower);
         chassisStartTime = runtime.seconds();
         chassisSetTime = seconds;
         chassisPower = CPower;
+        setChassisPower(chassisPower, chassisPower, chassisPower, chassisPower);
     }
     private void leftwardState(double seconds, double CPower) {
         chassisState = ChassisState.LEFTWARD;
-        setChassisPower(-chassisPower, chassisPower, chassisPower, -chassisPower);
         chassisStartTime = runtime.seconds();
         chassisSetTime = seconds;
         chassisPower = CPower;
+        setChassisPower(-chassisPower, chassisPower, chassisPower, -chassisPower);
     }
     private void rightwardState(double seconds, double CPower) {
         chassisState = ChassisState.RIGHTWARD;
-        setChassisPower(chassisPower, -chassisPower, -chassisPower, chassisPower);
         chassisStartTime = runtime.seconds();
         chassisSetTime = seconds;
         chassisPower = CPower;
+        setChassisPower(chassisPower, -chassisPower, -chassisPower, chassisPower);
     }
     private void stopState() {
         chassisState = ChassisState.STOP;
@@ -343,7 +351,7 @@ public class Autonomous extends OpMode {
                 telemetry.addData("State:", "0 START");
                 // Set positions for next state
                 // Set forward
-                forwardState(0.5, values.AutonomousCPower);
+                forwardState(3, values.AutonomousCPower);
                 // Set lift
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));//add
                 lift.setTargetPosition(values.liftPositions.get("up"));
@@ -351,6 +359,7 @@ public class Autonomous extends OpMode {
                 lift.setPower(1);
                 // Change state
                 autoState = AutoState.FORWARD_LIFT1;
+                telemetry.addData("=:", "==================");
                 break;
             }
             case FORWARD_LIFT1: {
@@ -368,16 +377,22 @@ public class Autonomous extends OpMode {
                     lift.setPower(1);
                     //change state
                     autoState = AutoState.PUT2;
+                    telemetry.addData("=:", "==================");
                 }
                 break;
             }
             case PUT2: {
                 telemetry.addData("State:","2 PUT");
-
-                if(Math.abs(liftCurrentPosition - values.liftPositions.get("put")) < 50&&runtime.seconds()-StartStatePutTime>=5) {
+                double lift_current_A = ((DcMotorEx)lift).getCurrent(CurrentUnit.AMPS);
+                if(lift_current_A >= 3.0){
+                    lift.setPower(0.5);
+                }
+                if(Math.abs(liftCurrentPosition - values.liftPositions.get("put")) < 50 || (runtime.seconds()-StartStatePutTime)>=5) {
                     top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
                     autoState = AutoState.RETRACT3;
+                    telemetry.addData("=:", "==================");
                 }
+                break;
             }
             case RETRACT3:{
                 telemetry.addData("State:","3 RETRACT");
@@ -386,17 +401,20 @@ public class Autonomous extends OpMode {
                 lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 lift.setPower(1);
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_down"));
-                autoState = AutoState.WAIT4;
+                autoState = AutoState.RIGHTWARD4;
+                telemetry.addData("=:", "==================");
+                break;
             }
-            case WAIT4: {
+            case RIGHTWARD4: {
                 telemetry.addData("State:", "4 WAIT");
                 if(chassisState==ChassisState.STOP) {
                     rightwardState(0.5,values.AutonomousCPower);
                     autoState = AutoState.END5;
+                    telemetry.addData("=:", "==================");
                 }
 
                 //stopState();
-                //break;
+                break;
             }
             case END5:{
                 telemetry.addData("State:","5 END");

@@ -17,7 +17,7 @@ public class Values {
 
     Map<String, Integer> intakePositions = new HashMap<String, Integer>(){{
         put("zero", 0);
-        put("up", 870);
+        put("up", 770);
         put("put", 1300);
         put("max", 1800);
     }};
@@ -30,9 +30,10 @@ public class Values {
     }};
 
     Map<String, Double> armPositions = new HashMap<String, Double>(){{
-        put("DC_arm_down", 0.0);
-        put("DC_arm_change", 0.5);
-        put("DC_arm_IN_min", 0.8);
+        put("DC_arm_down", 1.0);
+        //put("DC_arm_change", 0.5);
+        put("DC_arm_IN_min", 0.63);
+        put("DC_head_init", 0.5);
         put("DC_arm_init", 1.0);
         put("TC_arm_up", 1.0);
         put("TC_arm_down", 0.0);

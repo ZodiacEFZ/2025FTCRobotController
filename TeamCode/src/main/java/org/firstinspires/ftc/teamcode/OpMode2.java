@@ -87,11 +87,12 @@ public class OpMode2 extends OpMode {
     private LiftState liftState = LiftState.ZERO;
     private boolean gp2y_last_pressed = false;
 
+    /*
     private enum IntakeState {
         IN,
         OUT,
     };
-    private IntakeState intakeState = IntakeState.IN;
+    private IntakeState intakeState = IntakeState.IN;*/
     double intake_big_current_time = 0.0;
 
     @Override
@@ -112,6 +113,8 @@ public class OpMode2 extends OpMode {
 
             down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
             top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
+            down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
+            down_clip_head.setPosition(values.armPositions.get("DC_head_init"));
 
             intake = hardwareMap.get(DcMotor.class,"Intake");
             //抬升电机
@@ -135,10 +138,13 @@ public class OpMode2 extends OpMode {
             front_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rear_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
             intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            intake.setTargetPosition(0);
             lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            lift.setTargetPosition(0);
         }
         {
             // 从硬件映射中获取 IMU
@@ -170,6 +176,15 @@ public class OpMode2 extends OpMode {
         double x = gamepad1.left_stick_x;
         double rx = -gamepad1.right_stick_x;
 
+        if (gamepad2.dpad_left){
+            rx += 0.01;
+        }
+        if (gamepad2.dpad_right){
+            rx -= 0.01;
+        }
+        rx = Math.min(rx, 1);
+        rx = Math.max(rx, -1);
+
         // 如果按下游戏手柄的选项按钮，则重置 IMU 的偏航角
         if(gamepad1.options){
             telemetry.addData("按键","[START]");
@@ -200,8 +215,8 @@ public class OpMode2 extends OpMode {
         //telemetry.addData("底盘功率", "左前:(%.2f) 右前:(%.2f) 左后:(%.2f) 右后:(%.2f)", front_left_power, front_right_power, rear_left_power, rear_right_power);
     }
     private void IntakeLoop(){
-        boolean pad1y = gamepad1.y;
-        boolean pad1a = gamepad1.a;
+        boolean pad1y = (gamepad1.y || gamepad2.dpad_up);
+        boolean pad1a = (gamepad1.a || gamepad2.dpad_down);
         int intake_cur_pos=intake.getCurrentPosition();
         telemetry.addData("IntakeEncoder",intake_cur_pos);
         int intake_set_pos=((pad1y?1:0)-(pad1a?1:0))*30+intake_cur_pos;
@@ -210,12 +225,12 @@ public class OpMode2 extends OpMode {
             intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             intake.setPower(0.1);
 
-            if(intake_set_pos > intake_cur_pos){
+            /*if(intake_set_pos > intake_cur_pos){
                 intakeState = IntakeState.OUT;
             }
             else{
                 intakeState = IntakeState.IN;
-            }
+            }*/
         }
 
         if(gamepad1.b){     //Force stop Intake
@@ -224,9 +239,10 @@ public class OpMode2 extends OpMode {
         }
 
         double intake_current_A = ((DcMotorEx)intake).getCurrent(CurrentUnit.AMPS);
-        if(intake_current_A >= 3.0){
+        if(intake_current_A >= 2.0){
             if((runtime.seconds() - intake_big_current_time) > 2.0){
                 intake.setPower(0.0);
+                intake.setTargetPosition(intake_cur_pos);
             }
             else if(intake_big_current_time <= 0.001){
                 intake_big_current_time = runtime.seconds();
@@ -346,21 +362,27 @@ public class OpMode2 extends OpMode {
         //DownClip arm control
         double ly2 = gamepad2.left_stick_y;
         double DC_arm_curr = down_clip_arm.getPosition();
-        if(Math.abs(ly2) > 0.1){
+        /*if(Math.abs(ly2) > 0.1){
             double DC_arm_set = DC_arm_curr - ly2/100;
             DC_arm_set = Math.min(DC_arm_set, 1);
             DC_arm_set = Math.max(DC_arm_set, 0);
             down_clip_arm.setPosition(DC_arm_set);
-        }
-        if((intakeState == IntakeState.IN) && (DC_arm_curr < values.armPositions.get("DC_arm_IN_min"))){
+        }*/
+        if(ly2 > 0.5){
             down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
         }
-
-        //DownClip arm 放下
-        if(gamepad2.dpad_down){
-            telemetry.addData("按键2","[↓]");
+        if(ly2 < -0.5){
             down_clip_arm.setPosition(values.armPositions.get("DC_arm_down"));
         }
+        /*if((intakeState == IntakeState.IN) && (DC_arm_curr < values.armPositions.get("DC_arm_IN_min"))){
+            down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
+        }*/
+
+        //DownClip arm 放下
+        /*if(gamepad2.dpad_down){
+            telemetry.addData("按键2","[↓]");
+            down_clip_arm.setPosition(values.armPositions.get("DC_arm_down"));
+        }*/
 
         //DownClip 和 TopClip 交接
 

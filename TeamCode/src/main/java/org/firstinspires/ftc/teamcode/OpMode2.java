@@ -76,6 +76,15 @@ public class OpMode2 extends OpMode {
     private boolean DCstate = true, LB_last_pressed = false; // false for open; true for close
     private boolean TCstate = true, RB_last_pressed = false; // false for open; true for close
 
+    private enum LiftState {
+        ZERO,
+        UP,
+        PUT,
+        MAX,
+    };
+    private LiftState liftState = LiftState.ZERO;
+    private boolean gp2y_last_pressed = false;
+
 
     @Override
     public void init() {
@@ -190,12 +199,16 @@ public class OpMode2 extends OpMode {
             intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             intake.setPower(1);
         }
+        telemetry.addData("Intake编码器",intake_cur_pos);
+        telemetry.addData("Intake目标",intake.getTargetPosition());
+        telemetry.addData("Intake功率",intake.getPower());
     }
     private void LiftLoop(){
         double lt2 = gamepad2.left_trigger;
         double rt2 = gamepad2.right_trigger;
         int lift_cur_pos = lift.getCurrentPosition();
         if(Math.abs(lt2) > 0.1){
+            liftState = LiftState.ZERO;
             int lift_set_pos = lift_cur_pos + (int) (lt2*50);
             lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
             //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
@@ -204,6 +217,7 @@ public class OpMode2 extends OpMode {
             lift.setPower(1);
         }
         if(Math.abs(rt2) > 0.1){
+            liftState = LiftState.ZERO;
             int lift_set_pos = lift_cur_pos - (int) (rt2*50);
             lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
             //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
@@ -212,13 +226,30 @@ public class OpMode2 extends OpMode {
             lift.setPower(1);
         }
 
-        if(gamepad2.y){     //Lift up
-            lift.setTargetPosition(values.liftPositions.get("up"));
-            lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            lift.setPower(1);
+        if(gamepad2.y && !gp2y_last_pressed){     //Lift up
+            gp2y_last_pressed = true;
             telemetry.addData("按键2","[Y]");
+            if((liftState == LiftState.ZERO) || (liftState == LiftState.PUT)){
+                lift.setTargetPosition(values.liftPositions.get("up"));
+                lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                lift.setPower(1);
+                top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));
+                liftState = LiftState.UP;
+            }
+            else if (liftState == LiftState.UP){
+                lift.setTargetPosition(values.liftPositions.get("put"));
+                lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                lift.setPower(1);
+                top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));
+                liftState = LiftState.PUT;
+            }
         }
+        else if (!gamepad2.y){
+            gp2y_last_pressed = false;
+        }
+
         if(gamepad2.a){     //Lift zero
+            liftState = LiftState.ZERO;
             lift.setTargetPosition(values.liftPositions.get("zero"));
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setPower(1);
@@ -268,7 +299,7 @@ public class OpMode2 extends OpMode {
         double ly2 = gamepad2.left_stick_y;
         double DC_arm_curr = down_clip_arm.getPosition();
         if(Math.abs(ly2) > 0.1){
-            double DC_arm_set = DC_arm_curr + ly2/100;
+            double DC_arm_set = DC_arm_curr - ly2/100;
             DC_arm_set = Math.min(DC_arm_set, 1);
             DC_arm_set = Math.max(DC_arm_set, 0);
             down_clip_arm.setPosition(DC_arm_set);
@@ -302,7 +333,7 @@ public class OpMode2 extends OpMode {
         double ry2 = gamepad2.right_stick_y;
         double TC_arm_curr = top_clip_arm.getPosition();
         if(Math.abs(ry2) > 0.1){
-            double TC_arm_set = TC_arm_curr + ry2/500;
+            double TC_arm_set = TC_arm_curr - ry2/100;
             TC_arm_set = Math.min(TC_arm_set, 1);
             TC_arm_set = Math.max(TC_arm_set, 0);
             top_clip_arm.setPosition(TC_arm_set);

@@ -16,6 +16,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 @com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="Autonomous with FSM(test)", group="Robot")
 public class Autonomous extends OpMode {
     //LynxModule controlHub;
+    private double StartStatePutTime;
     private Servo down_clip_head;//down_clip_head控制夹子的旋转
     private Servo down_clip_hand;//down_clip_hand控制夹子的抓放
     private Servo down_clip_arm;//舵机夹子,顶部的那个,目前还没装好
@@ -195,7 +196,8 @@ public class Autonomous extends OpMode {
         FORWARD_LIFT1,
         PUT2,
         RETRACT3,
-        WAIT4
+        WAIT4,
+        END5,
     };
     private AutoState autoState = AutoState.START0;
 
@@ -343,6 +345,7 @@ public class Autonomous extends OpMode {
                 // Set forward
                 forwardState(0.5, values.AutonomousCPower);
                 // Set lift
+                top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));//add
                 lift.setTargetPosition(values.liftPositions.get("up"));
                 lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 lift.setPower(1);
@@ -357,9 +360,10 @@ public class Autonomous extends OpMode {
                     lift.setPower(0.5);
                 }
                 //wait for forward & lift
-                if (Math.abs(liftCurrentPosition - values.liftPositions.get("up")) < 50) {
+                if (Math.abs(liftCurrentPosition - values.liftPositions.get("up")) < 50 && chassisState==ChassisState.STOP) {
                     // Set positions for next state
                     lift.setTargetPosition(values.liftPositions.get("put"));
+                    StartStatePutTime = runtime.seconds();
                     lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     lift.setPower(1);
                     //change state
@@ -367,8 +371,35 @@ public class Autonomous extends OpMode {
                 }
                 break;
             }
+            case PUT2: {
+                telemetry.addData("State:","2 PUT");
+
+                if(Math.abs(liftCurrentPosition - values.liftPositions.get("put")) < 50&&runtime.seconds()-StartStatePutTime>=5) {
+                    top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
+                    autoState = AutoState.RETRACT3;
+                }
+            }
+            case RETRACT3:{
+                telemetry.addData("State:","3 RETRACT");
+                backwardState(0.5,values.AutonomousCPower);
+                lift.setTargetPosition(values.liftPositions.get("zero"));
+                lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                lift.setPower(1);
+                top_clip_arm.setPosition(values.armPositions.get("TC_arm_down"));
+                autoState = AutoState.WAIT4;
+            }
             case WAIT4: {
                 telemetry.addData("State:", "4 WAIT");
+                if(chassisState==ChassisState.STOP) {
+                    rightwardState(0.5,values.AutonomousCPower);
+                    autoState = AutoState.END5;
+                }
+
+                //stopState();
+                //break;
+            }
+            case END5:{
+                telemetry.addData("State:","5 END");
                 stopState();
                 break;
             }

@@ -184,11 +184,11 @@ public class OpMode2 extends OpMode {
         boolean pad1a = gamepad1.a;
         int intake_cur_pos=intake.getCurrentPosition();
         telemetry.addData("IntakeEncoder",intake_cur_pos);
-        int intake_set_pos=(pad1y?1:0)-(pad1a?1:0)+intake_cur_pos;
+        int intake_set_pos=((pad1y?1:0)-(pad1a?1:0))*30+intake_cur_pos;
         if(intake_set_pos!=intake_cur_pos) {
             intake.setTargetPosition(intake_set_pos);
             intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            intake.setPower(0.3);
+            intake.setPower(1);
         }
     }
     private void LiftLoop(){

@@ -201,10 +201,10 @@ public class OpMode2 extends OpMode {
         double rx = -gamepad1.right_stick_x;
 
         if (gamepad2.dpad_left){
-            rx += 0.2;
+            rx += 0.5;
         }
         if (gamepad2.dpad_right){
-            rx -= 0.2;
+            rx -= 0.5;
         }
         rx = Math.min(rx, 1);
         rx = Math.max(rx, -1);
@@ -249,7 +249,7 @@ public class OpMode2 extends OpMode {
         boolean pad1a = (gamepad1.a || gamepad2.dpad_down);
         int intake_cur_pos=intake.getCurrentPosition();
         telemetry.addData("IntakeEncoder",intake_cur_pos);
-        int intake_set_pos=((pad1y?1:0)-(pad1a?1:0))*30+intake_cur_pos;
+        int intake_set_pos=((pad1y?1:0)-(pad1a?1:0))*values.intSpeed.get("intake")+intake_cur_pos;
         if(intake_set_pos!=intake_cur_pos) {
             intake.setTargetPosition(intake_set_pos);
             intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -295,6 +295,7 @@ public class OpMode2 extends OpMode {
         int lift_cur_pos = lift.getCurrentPosition();
         if(Math.abs(lt2) > 0.1){
             liftState = LiftState.ZERO;
+
             int lift_set_pos = lift_cur_pos + (int) (lt2*50);
             lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
             //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
@@ -304,6 +305,7 @@ public class OpMode2 extends OpMode {
         }
         if(Math.abs(rt2) > 0.1){
             liftState = LiftState.ZERO;
+
             int lift_set_pos = lift_cur_pos - (int) (rt2*50);
             lift_set_pos = Math.min(lift_set_pos, values.liftPositions.get("max"));
             //lift_set_pos = Math.max(lift_set_pos, values.liftPositions.get("zero"));
@@ -325,13 +327,14 @@ public class OpMode2 extends OpMode {
                 liftState = LiftState.UP;
             }
             else if (liftState == LiftState.UP){
+                liftState = LiftState.PUT;
+
                 lift.setTargetPosition(values.liftPositions.get("put"));
                 lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 lift.setPower(1);
 
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));
 
-                liftState = LiftState.PUT;
             }
         }
         else if (!gamepad2.y){
@@ -340,6 +343,7 @@ public class OpMode2 extends OpMode {
 
         if(gamepad2.a){     //Lift zero
             liftState = LiftState.ZERO;
+
             lift.setTargetPosition(values.liftPositions.get("zero"));
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setPower(1);
@@ -351,7 +355,7 @@ public class OpMode2 extends OpMode {
 
         if(gamepad2.b){     //Force stop Lift & reset
             lift.setPower(0);
-            lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            //lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             telemetry.addData("按键2","[B]");
             gamepad2.rumble(1000);
         }
@@ -401,19 +405,19 @@ public class OpMode2 extends OpMode {
         //DownClip arm control
         double ly2 = -gamepad2.left_stick_y;
         double DC_arm_curr = down_clip_arm.getPosition();
-        if(Math.abs(ly2) >= 0.8){
-            double DC_arm_set = DC_arm_curr + ly2/100;
+        if(Math.abs(ly2) >= 0.2){
+            double DC_arm_set = DC_arm_curr + ly2*values.speed.get("down_clip_arm_ly2");
             DC_arm_set = Math.min(DC_arm_set, 1);
             DC_arm_set = Math.max(DC_arm_set, 0);
             down_clip_arm.setPosition(DC_arm_set);
         }
-        if((ly2 > 0.2) && (ly2 < 0.8)){
+        /*if(ly2 > 0.8){
             //down_clip_arm.setPosition(values.armPositions.get("DC_arm_up"));
             down_clip_arm.setPosition(values.armPositions.get("DC_arm_init"));
         }
-        if((ly2 < -0.2) && (ly2 > -0.8)){
+        if(ly2 < -0.8){
             down_clip_arm.setPosition(values.armPositions.get("DC_arm_down"));
-        }
+        }*/
         /*if((intakeState == IntakeState.IN) && (DC_arm_curr < values.armPositions.get("DC_arm_IN_min"))){
             down_clip_arm.setPosition(values.armPositions.get("DC_arm_IN_min"));
         }*/
@@ -434,7 +438,9 @@ public class OpMode2 extends OpMode {
                 top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
             }
             else {
-                top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
+                if(liftState != LiftState.UP){
+                    top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
+                }
             }
             gamepad1.rumble(100);
         }

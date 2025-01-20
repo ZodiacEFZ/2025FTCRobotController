@@ -44,7 +44,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
-@TeleOp(name = "02不要用这个 测试 (NO_IMU)", group = "TeleOp")
+//@TeleOp(name = "02不要用这个 测试 (NO_IMU)", group = "TeleOp")
 public class OpMode1 extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
@@ -199,10 +199,10 @@ public class OpMode1 extends OpMode {
         double rx = -gamepad1.right_stick_x;
 
         if (gamepad2.dpad_left){
-            rx += 0.2;
+            rx += 0.5;
         }
         if (gamepad2.dpad_right){
-            rx -= 0.2;
+            rx -= 0.5;
         }
         rx = Math.min(rx, 1);
         rx = Math.max(rx, -1);

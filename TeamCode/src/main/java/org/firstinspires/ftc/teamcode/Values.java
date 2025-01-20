@@ -8,10 +8,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Values {
+    Map<String, Double> speed = new HashMap<String, Double>(){{
+        put("down_clip_arm_ly2", 0.075);
+    }};
+
+    Map<String, Integer> intSpeed = new HashMap<String, Integer>(){{
+        put("intake", 60);
+    }};
+
     Map<String, Integer> liftPositions = new HashMap<String, Integer>(){{
         put("zero", 0);
-        put("up", 635);
-        put("put", 1580);
+        put("up", 620);
+        put("put", 1600);
         put("max", 1800);
     }};
 

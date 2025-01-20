@@ -455,7 +455,7 @@ public class Autonomous1 extends OpMode {
 
                 head.setPosition(values.headPositions.get("Head_down"));
                 // Set forward
-                forwardState(6.5, 0.3*values.AutonomousCPower);
+                forwardState(4.5, 0.7*values.AutonomousCPower);
                 // Set lift
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));//add
                 lift.setTargetPosition(values.liftPositions.get("up"));
@@ -503,7 +503,7 @@ public class Autonomous1 extends OpMode {
                     lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     lift.setPower(1);
 
-                    backwardState(5,0.5*values.AutonomousCPower);
+                    backwardState(4.5,0.5*values.AutonomousCPower);
 
                     top_clip_arm.setPosition(values.armPositions.get("TC_arm_down"));
 
@@ -519,7 +519,7 @@ public class Autonomous1 extends OpMode {
                 telemetry.update();
 
                 if((runtime.seconds()-StartStatePutTime)>=5) {
-                    rightwardState(7, 0.7*values.AutonomousCPower);
+                    rightwardState(7, values.AutonomousCPower);
                     autoState = AutoState.RIGHTWARD4;
                     telemetry.addLine("==================");
                     telemetry.update();

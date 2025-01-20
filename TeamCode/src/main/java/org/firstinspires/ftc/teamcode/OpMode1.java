@@ -113,12 +113,6 @@ public class OpMode1 extends OpMode {
 
             head = hardwareMap.get(Servo.class,"Head");
 
-            down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
-            top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
-            down_clip_arm.setPosition(values.armPositions.get("DC_arm_init"));
-            down_clip_head.setPosition(values.armPositions.get("DC_head_init"));
-            head.setPosition(values.headPositions.get("Head_up"));
-
             intake = hardwareMap.get(DcMotor.class,"Intake");
             //抬升电机
             lift = hardwareMap.get(DcMotor.class,"Lift");
@@ -173,6 +167,11 @@ public class OpMode1 extends OpMode {
     public void start() {
         // 开始时重置运行时间
         runtime.reset();
+
+        down_clip_hand.setPosition(values.clipPositions.get("DC_close"));
+        top_clip_hand.setPosition(values.clipPositions.get("TC_close"));
+        down_clip_arm.setPosition(values.armPositions.get("DC_arm_init"));
+        down_clip_head.setPosition(values.armPositions.get("DC_head_init"));
 
         head.setPosition(values.headPositions.get("Head_down"));
         HeadState = false;

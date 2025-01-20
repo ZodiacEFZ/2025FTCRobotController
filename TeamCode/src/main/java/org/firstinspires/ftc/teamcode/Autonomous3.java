@@ -13,8 +13,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
-@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="Autonomous with FSM(test)", group="Autonomous")
-public class Autonomous extends OpMode {
+@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="03 只挂高杆，不倒退，不向右平移", group="Autonomous")
+public class Autonomous3 extends OpMode {
     //LynxModule controlHub;
     private Servo down_clip_head;//down_clip_head控制夹子的旋转
     private Servo down_clip_hand;//down_clip_hand控制夹子的抓放
@@ -207,7 +207,7 @@ public class Autonomous extends OpMode {
         FORWARD_LIFT1,
         PUT2,
         RETRACT_BACKWARD3,
-        RIGHTWARD4,
+        //RIGHTWARD4,
         //TURN5,
         END6
     };
@@ -474,7 +474,7 @@ public class Autonomous extends OpMode {
                     lift.setPower(0.5);
                 }
                 //wait for forward & lift
-                if ((Math.abs(liftCurrentPosition - values.liftPositions.get("up")) < 50) && chassisState==ChassisState.STOP && (runtime.seconds()-StartStatePutTime)>=6) {
+                if ((Math.abs(liftCurrentPosition - values.liftPositions.get("up")) < 50) && chassisState== ChassisState.STOP && (runtime.seconds()-StartStatePutTime)>=6) {
                     // Set positions for next state
                     lift.setTargetPosition(values.liftPositions.get("put"));
                     StartStatePutTime = runtime.seconds();
@@ -501,7 +501,7 @@ public class Autonomous extends OpMode {
                     lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     lift.setPower(1);
 
-                    backwardState(5,0.5*values.AutonomousCPower);
+                    //backwardState(5,0.5*values.AutonomousCPower);
 
                     top_clip_arm.setPosition(values.armPositions.get("TC_arm_down"));
 
@@ -516,19 +516,19 @@ public class Autonomous extends OpMode {
                 telemetry.addData("State3:","3 RETRACT_BACKWARD");
                 telemetry.update();
 
-                if((runtime.seconds()-StartStatePutTime)>=5) {
-                    rightwardState(7, 0.7*values.AutonomousCPower);
-                    autoState = AutoState.RIGHTWARD4;
+                if(Math.abs(liftCurrentPosition - values.liftPositions.get("zero")) < 50 && (runtime.seconds()-StartStatePutTime)>=5) {
+                    //rightwardState(7, 0.7*values.AutonomousCPower);
+                    autoState = AutoState.END6;
                     telemetry.addLine("==================");
                     telemetry.update();
                 }
 
                 break;
             }
-            case RIGHTWARD4: {
+            /*case RIGHTWARD4: {
                 telemetry.addData("State4:", "4 RIGHTWARD");
                 telemetry.update();
-                if(chassisState==ChassisState.STOP) {
+                if(chassisState== ChassisState.STOP) {
                     //turnState(0.3, 0.5);
                     //autoState = AutoState.TURN5;
                     autoState = AutoState.END6;
@@ -538,7 +538,7 @@ public class Autonomous extends OpMode {
 
                 //stopState();
                 break;
-            }
+            }*/
             /*case TURN5: {
                 telemetry.addData("State5:", "5 TURN");
                 telemetry.update();

@@ -86,7 +86,7 @@ public class Autonomous1 extends OpMode {
 
             intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            intake.setTargetPosition(0);
+            intake.setTargetPosition(-100);
             lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             lift.setTargetPosition(0);

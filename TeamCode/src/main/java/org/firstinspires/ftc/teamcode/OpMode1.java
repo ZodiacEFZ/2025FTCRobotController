@@ -229,6 +229,11 @@ public class OpMode1 extends OpMode {
         double rear_left_power = (rotY - rotX + rx) / denominator;
         double front_right_power = (rotY - rotX - rx) / denominator;
         double rear_right_power = (rotY + rotX - rx) / denominator;
+
+        if(gamepad2.x){
+            front_left_power = rear_left_power = front_right_power = rear_right_power = 0.0;
+        }
+
         // 设置四个电机的功率
         front_left.setPower(front_left_power);
         rear_left.setPower(rear_left_power);

@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
-@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="Autonomous with FSM(test)", group="Robot")
+@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="Autonomous with FSM(test)", group="Autonomous")
 public class Autonomous extends OpMode {
     //LynxModule controlHub;
     private Servo down_clip_head;//down_clip_head控制夹子的旋转

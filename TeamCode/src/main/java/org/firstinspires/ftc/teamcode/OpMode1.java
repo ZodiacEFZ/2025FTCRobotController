@@ -44,11 +44,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
-import java.util.HashMap;
-import java.util.Map;
-
-@TeleOp(name = "01用这个 遥控v6.0.0 (FieldCentric)", group = "TeleOp")
-public class OpMode2 extends OpMode {
+@TeleOp(name = "02不要用这个 测试 (NO_IMU)", group = "TeleOp")
+public class OpMode1 extends OpMode {
     // 记录运行时间的计时器
     private final ElapsedTime runtime = new ElapsedTime();
     //底部夹子的两个舵机
@@ -197,7 +194,7 @@ public class OpMode2 extends OpMode {
         }
     }
 
-    private void FieldCentricMecanum(){
+    private void ChassisLoop(){
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = -gamepad1.right_stick_x;
@@ -220,8 +217,10 @@ public class OpMode2 extends OpMode {
 
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
         // 将运动方向相对于机器人的旋转进行旋转
-        double rotX = x * Math.cos(botHeading) - y * Math.sin(botHeading);
-        double rotY = x * Math.sin(botHeading) + y * Math.cos(botHeading);
+        /*double rotX = x * Math.cos(botHeading) - y * Math.sin(botHeading);
+        double rotY = x * Math.sin(botHeading) + y * Math.cos(botHeading);*/
+        double rotX = x;
+        double rotY = y;
         // 抵消不完美的平移
         rotX = rotX * values.chassisMultiplier;
         //分母是最大的电机功率（绝对值）或1，这确保所有功率保持相同的比例，但仅当至少一个超出范围[-1,1]时。
@@ -470,7 +469,7 @@ public class OpMode2 extends OpMode {
     public void loop() {
         HeadLoop();
 
-        FieldCentricMecanum();
+        ChassisLoop();
 
         ClipsLoop();
 
@@ -490,3 +489,4 @@ public class OpMode2 extends OpMode {
         intake.setPower(0);
     }
 }
+

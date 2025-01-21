@@ -79,6 +79,8 @@ public class OpMode2 extends OpMode {
 
     private boolean DCstate = true, LB_last_pressed = false; // false for open; true for close
     private boolean TCstate = true, RB_last_pressed = false; // false for open; true for close
+    private double RB_press_start_time = 0.0;
+
     private boolean HeadState = true, gp1_LB_last_pressed = false; // true for up; false for down
 
     private enum LiftState {
@@ -432,6 +434,7 @@ public class OpMode2 extends OpMode {
 
         //TopClip hand control
         if(gamepad2.right_bumper && !RB_last_pressed){
+            RB_press_start_time = runtime.seconds();
             TCstate = !TCstate;
             RB_last_pressed = true;
             if(TCstate){
@@ -446,6 +449,10 @@ public class OpMode2 extends OpMode {
         }
         else if(!gamepad2.right_bumper){
             RB_last_pressed = false;
+            RB_press_start_time = 0.0;
+        }
+        else if((RB_press_start_time > 0.01) && ((runtime.seconds()-RB_press_start_time)>=2.0)){
+            top_clip_hand.setPosition(values.clipPositions.get("TC_open"));
         }
 
         //TopClip arm

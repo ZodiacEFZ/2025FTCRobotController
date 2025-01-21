@@ -453,7 +453,7 @@ public class Autonomous4 extends OpMode {
 
                 head.setPosition(values.headPositions.get("Head_down"));
                 // Set forward
-                forwardState(4.5, 0.7*values.AutonomousCPower);
+                forwardState(6, 0.4*values.AutonomousCPower);
                 // Set lift
                 top_clip_arm.setPosition(values.armPositions.get("TC_arm_up"));//add
                 lift.setTargetPosition(values.liftPositions.get("up"));
